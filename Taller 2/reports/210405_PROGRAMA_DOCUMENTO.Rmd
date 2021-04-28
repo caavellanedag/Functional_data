@@ -1,0 +1,599 @@
+---
+title: "Taller 1 - Análisis de datos funcionales"
+author: "Valeria Bejarano, Camilo Avellaneda"
+header-includes:
+   - \usepackage{bbm}
+   - \usepackage{amsbsy}
+   - \usepackage{mathtools}
+   - \usepackage{cancel}
+   - \usepackage{bigints}
+   - \usepackage{url}
+   - \usepackage{rotating}
+   - \usepackage{tikz}
+   - \usepackage{float}
+   - \usepackage{epstopdf}
+   - \usepackage{enumitem}
+   - \usepackage{bm}
+   - \usepackage{natbib}
+output:
+  bookdown::pdf_document2:
+    citation_package: natbib
+    latex_engine: pdflatex
+bibliography: references.bib
+---
+
+```{r setup, include=FALSE}
+library(tinytex)
+#options( tinytex.verbose = TRUE)
+knitr::opts_chunk$set(echo = TRUE)
+options(tinytex.verbose = TRUE)
+```
+
+
+```{r echo=FALSE,include=FALSE,warning=FALSE}
+library(R.matlab)
+library(openxlsx)
+library(tidyverse)
+library(fda)
+library(fda.usc)
+library(caret)
+library(RColorBrewer)
+library(roahd)
+library(data.table)
+library(corrplot)
+library(fdaoutlier)
+library(scatterplot3d) 
+options(scipen=999)
+date<-str_replace(str_replace_all(Sys.Date(),"-",""),"20","")
+setwd("E:/Universidad Nacional/PhD/Functional data analysis/Taller 1/Programa documento")
+
+
+SelectionNumBasis<-function(.x,.y,x){
+  #lambda_10<-10^10
+  y<-t(absorp)[,.y]
+  #y = (x-20)^2+200*rnorm(1000)0
+  x = rangeval
+  spline_basis=create.bspline.basis(rangeval=c(min(x),max(x)),nbasis=.x)
+  absorb_fd=smooth.basis(y=y, fdParobj=spline_basis)
+  Bias_2<-t(eval.fd(x, fdobj=absorb_fd$fd) - y) %*% (eval.fd(x, fdobj=absorb_fd$fd) - y) 
+  CME<-Bias_2/(length(x)-.x)
+  X<-eval.basis(x, spline_basis)
+  Var_estimator<-sum(diag(X%*% ginv(t(X) %*% X) %*% t(X)))*CME
+  data.frame(Num_function=.y,Num_basis=.x,Bias_squared=Bias_2,Var_estimator=Var_estimator,MSE=Var_estimator+Bias_2)
+}
+
+SelectionNumBasis_2<-function(df,.x,.y,range){
+  #lambda_10<-10^10
+  y<-df[,.y]
+  x<-range
+  #y = (x-20)^2+200*rnorm(1000)0
+  spline_basis=create.bspline.basis(rangeval=c(min(range),max(range)),nbasis=.x)
+  absorb_fd=smooth.basis(y=y, fdParobj=spline_basis)
+  Bias_2<-t(eval.fd(x, fdobj=absorb_fd$fd) - y) %*% (eval.fd(x, fdobj=absorb_fd$fd) - y) 
+  CME<-Bias_2/(length(x)-.x)
+  X<-eval.basis(argvals, spline_basis)
+  Var_estimator<-sum(diag(X%*% ginv(t(X) %*% X) %*% t(X)))*CME
+  data.frame(Num_function=.y,Num_basis=.x,Bias_squared=Bias_2,Var_estimator=Var_estimator,MSE=Var_estimator+Bias_2)
+}
+
+
+ggplot_fd<-function(df,iter,fdParobj){
+  df.fd=smooth.basis(argvals=unique(datos_2$Curva),y=df[Medicion==iter,Suggar], fdParobj=fdParobj)
+  predict(df.fd,newdata=unique(df$Curva))
+}
+
+argvals = seq(275,560,by=0.5)
+k=5
+datos<-readMat("E:/Universidad Nacional/PhD/Functional data analysis/Taller 1/Programa documento/data.mat")
+
+datos_1<-datos$X[,seq(571*(k-1)+1,571*(k),1)]
+datos_1<-datos_1 %>% t()
+
+# df<-map2_dfr(rep(4:20,each=ncol(datos_1)),rep(1:ncol(datos_1),17),
+#              ~SelectionNumBasis_2(df=datos_1,.x,.y,range=1:571))
+# df<-data.table(df)
+# 
+# Summary_num_basis<-df[,.(MSE=sum(MSE),Bias_squared=sum(Bias_squared),
+#                          Var_estimator=sum(Var_estimator)),
+#                       by=.(Num_basis)]
+# Summary_num_basis[order(MSE),]
+```
+
+
+<!-- ```{r echo=FALSE,warning=FALSE} -->
+<!-- df[,.(MSE=sum(MSE),Bias_squared=sum(Bias_squared), -->
+<!--       Var_estimator=sum(Var_estimator)), -->
+<!--    by=.(Num_basis)] %>% melt(id.vars="Num_basis",variable.name="Variable",value.name="Value") %>%  -->
+<!--   ggplot()+geom_line(aes(x=Num_basis,Value,linetype=Variable,color=Variable),size=1.1)+ scale_color_brewer(palette="Set1")+theme_bw()+ylab("Cuadrado medio del error total")+ xlab("Número de funciones base") -->
+<!-- ``` -->
+
+
+
+
+
+
+
+
+\begin{enumerate}
+    \item  El proceso de producción de azúcar proveniente de la remolacha es muy importante en ciertas regiones del mundo como en Escandinavia. En este proceso se emplea la espectrometría para detectar impurezas y controlar la calidad del azúcar. En particular las curvas espectrométricas corresponden a 7 longitudes de onda de excitación $(Y_1=230, Y_2=240 , Y_3=255, Y_4=290, Y_5=305, Y_6=325$ y $Y_7=340 nm)$, donde cada una de estas longitudes representa un proceso funcional continuo $(Y_i)$, así que el proceso multivariado funcional $\bm{Y}$ está conformado por $\bm{Y}=(Y_1, Y_2, \ldots, Y_7)$.
+   
+Usando este dataset seleccione un proceso cualesquiera y para este proceso encuentre
+    
+
+
+\begin{itemize}
+\item La función media
+\item La función media recortada al 10\%
+\item La función varianza
+\item La función covarianza
+\item La función mediana
+\item Funciones cuantiles 90 y 95
+\item Región central 0.75
+\item Outliers
+\item El factor de expansión de 0.5 central región, F, tal que la tasa de falsos outliers sea de 0.007.
+    \end{itemize}
+    \item Usando este mismo dataset, encuentre:
+
+\begin{itemize}
+\item La función mediana multivariada
+\item Los outliers multivariados.
+\item Encuentre la correlación entre los diferentes procesos usando los coeficientes de correlación de Kendall y de Spearman para datos funcionales.
+\end{itemize}
+\item No existe una única manera de determinar la profundidad de objetos funcionales, de hecho, en la literatura existe una gran cantidad de propuestas. De acuerdo a la siguiente distribución, estudie la propuesta Extremal depth e impleméntela usando el conjunto de datos asociado a la producción de azúcar.
+\item De acuerdo a la siguiente distribución, estudie la propuesta Dai, W., $\&$ Genton, M. G. (2019). Directional outlyingness for multivariate functional data. Computational Statistics $\&$ Data Analysis, 131, 50-65. e impleméntela usando el conjunto de datos asociado a la producción de azúcar.
+\end{enumerate}
+
+
+\section{Desarrollo}
+
+
+
+```{r echo=FALSE,message=FALSE,warning=FALSE,include=FALSE}
+datos_2<-datos_1 %>%
+  as.data.table() %>% 
+  data.table::melt(value.name="Suggar") %>% as.data.table()
+datos_2<-datos_2[,Medicion := as.numeric(str_replace_all(variable,"V",""))]
+datos_2=datos_2[,Curva:=rep(seq(275,560,by=0.5),ncol(datos_1))]
+
+descriptive_1<-datos_2 %>% ggplot()+
+  geom_line(aes(Curva,Suggar,group=Medicion),color="midnightblue")+
+  guides(color=F)+theme_bw()+xlab("Medición")+ylab("Suggar")
+```
+
+```{r Descriptive,fig.cap="Gráfido de curvas suavizadas de las 268 funciones tenidas en cuenta dentro de la categoría de la longitud considerada.",echo=FALSE,message=FALSE,warning=FALSE,}
+descriptive_1
+```
+
+
+En este trabajo se busca explorar las diferentes herramientas dadas para el análisis de datos funcionales sobre un proceso de producción de azúcar. Para siete longitudes de onda de excitación diferentes se tienen 268 curvas espectrométricas. El trabajo aborda conceptos como el cálculo de una media, desviación, varianza, cuartiles y percentiles en el contexto de datos funcionales. El software utilizado para todos los procedimientos es R [ver @R]. La exploración de este conjunto de datos funcionales se realiza inicialmente desde una perspectiva univariada, en la cual consideramos la realización asociada a $Y_5$, mientras en una segunda etapa se considera el proceso completo como un proceso funcional multivariado. Los procedimientos que se muestran en este documento se basan en funciones que en su mayoría ya fueron programadas, las cuales se encuentran en las librerías de R como $fda$, $fda.usc$ y $roahd$ [ver @fda, @fda.usc y @roahd, respectivamente]. En los procedimientos que se requiere el uso de profundidades se hace uso de la banda de profundidad modificada o "MBD" por sus siglas en inglés, a menos de que se especifique algo diferente. La teoría correspondiente al cálculo de la MBD para cada función se puede consultar en @lopez2009concept.
+
+A partir del proceso funcional considerado en $Y_5$, se explora el conjunto de valores dado por la realización del proceso. La figura \@ref(fig:Descriptive) muestra los valores discretizados representados mediante una curva suavizada de los diferentes puntos. La muestra de datos funcionales corresponde a un total de 268 curvas. Allí se observa un comportamiento creciente en la primer etapa de la curva y un proceso decreciente en una segunda etapa. No se considera el proceso como cíclico, por lo cual las funciones base son $B$-splines.
+
+
+```{r echo=FALSE,warning=FALSE,message=FALSE}
+GCV<-map_dfc(1:ncol(datos_1),function(.y){
+  map_dbl(seq(-1,2.5,by=0.05),function(.x){
+    lambda_10<-10^.x
+    spline_basis=create.bspline.basis(rangeval=c(1,length(datos_1[,.y])),nbasis=40)
+    fdParobj = fdPar(fdobj=spline_basis, Lfdobj=2, lambda=lambda_10)
+    absorb_fd=smooth.basis(y=datos_1[,.y], fdParobj=fdParobj)
+    #mean((eval.fd(1:100, fdobj=absorb_fd$fd) - t(absorp)[,.y])^2)
+    absorb_fd$gcv
+  })
+})
+
+log10_lambda=seq(-1,2.5,by=0.05)
+lambda=10^log10_lambda
+GCV=rowMeans(GCV)
+df_gcv<-data.frame(log10_lambda,
+                   lambda,
+                   GCV)
+#df_gcv[which.min(df_gcv$GCV),]
+OptimalNumBasis<-15
+```
+
+```{r lambda,fig.cap="Gráfico de validación cruzada generalizada para determinar el parámetro de penalización óptimo.",echo=FALSE,warning=FALSE}
+df_gcv %>% ggplot()+geom_point(aes(x=log10_lambda,GCV),size=1)+theme_bw()+
+  ylab("Validación cruzada generalizada")+xlab("Log10(lambda)")
+```
+
+Como se muestra en @ramsay2007applied, la figura \@ref(fig:Descriptive) ilustra la función de penalización con respecto al logaritmo del parámetro de curvatura. Entre mayor sea dicho parámetro, las curvas van a tener menos curvaturas y viceversa. En este caso, cuando el logaritmo del parámetro es igual a 2.05, se obtiene un mínimo, por lo cual en adelante se utilizará este valor para todos los procedimientos requeridos. 
+
+
+```{r Mean,echo=FALSE,warning=FALSE,message=FALSE,fig.cap="Funciones estimadas junto con su curva promedio y su desviación estándar funcional."}
+OptimalNumBasis<-15
+spline_basis=create.bspline.basis(rangeval=c(min(datos_2$Curva),max(datos_2$Curva)),nbasis=OptimalNumBasis)
+fdParobj<- fdPar(fdobj=spline_basis, Lfdobj=2, lambda=10^(2.05))
+
+predict_fd<-map_dfc(1:268,
+                    ~ggplot_fd(df=datos_2,iter=.x,fdParobj)) %>% as.data.table()
+colnames(predict_fd)<-paste0("X",1:length(unique(datos_2$Medicion)))
+
+datos_1<-predict_fd
+datos_1<-datos_1 %>% as.data.frame()
+datos_2<-datos_1 %>%
+  as.data.table() %>% 
+  data.table::melt(value.name="Suggar") %>% as.data.table()
+datos_2<-datos_2[,Medicion := as.numeric(str_replace_all(variable,"X",""))]
+datos_2=datos_2[,Curva:=rep(seq(275,560,by=0.5),ncol(datos_1))]
+# predict_fd_2<-predict_fd %>%
+#   as.data.table() %>%
+#   data.table::melt(value.name="Suggar") %>% as.data.table()
+# predict_fd_2<-predict_fd_2[,Medicion := as.numeric(str_replace_all(variable,"X",""))]
+# 
+
+
+fit_fd=smooth.basis(argvals=unique(datos_2$Curva),y=as.matrix(datos_1), fdParobj=fdParobj)
+mean_fd=mean.fd(fit_fd$fd)
+trimmed_mean_fd=mean.fd(fit_fd$fd,trim=0.1)
+std_fd=std.fd(fit_fd$fd)
+
+
+
+summary_stats<-data.frame(Curva=unique(datos_2$Curva),
+                   Mean=predict(mean_fd,newdata=unique(datos_2$Curva)),
+                   Trimmed_mean=predict(trimmed_mean_fd,newdata=unique(datos_2$Curva)),
+                   Sd=predict(std_fd,newdata=unique(datos_2$Curva))) %>%
+                   rename("Trimmed_mean"="mean.1")
+
+
+
+#predict_fd_2=datos_2[,Curva:=rep(seq(275,560,by=0.5),ncol(datos_1))]
+
+ggplot()+
+  geom_line(data=datos_2 ,aes(x=Curva,y=Suggar,group=Medicion),color="darkorange",size=1,alpha=0.3)+
+  geom_line(data=summary_stats,aes(x=Curva,y=mean),size=2,color="darkred",linetype="twodash")+
+  geom_line(data=summary_stats,aes(x=Curva,y=Sd),size=2,color="green",linetype="twodash")+
+  guides(color=FALSE)+theme_bw()+xlab("Medición")+ylab("Medición espectrometrica")
+```
+
+
+La figura \@ref(fig:Mean) muestra las curvas ajustadas, junto con la curva que representa la función media en color rojo oscuro y la que representa la función asociada a la desviación estándar en color verde.
+
+
+
+
+```{r Trimmed,fig.cap="Funciones estimadas junto con su curva promedio recortada al 10% y su desviación estándar funcional",message=FALSE,echo=FALSE,warning=FALSE}
+ggplot()+
+  geom_line(data=datos_2 ,aes(x=Curva,y=Suggar,group=Medicion),color="darkorange",size=1,alpha=0.3)+
+  geom_line(data=summary_stats,aes(x=Curva,y=Trimmed_mean),size=2,color="darkred",linetype="twodash")+
+  geom_line(data=summary_stats,aes(x=Curva,y=Sd),size=2,color="green",linetype="twodash")+
+  guides(color=FALSE)+theme_bw()+xlab("Medición")+ylab("Medición espectrometrica")
+```
+
+La figura \@ref(fig:Trimmed) es una representación análoga a la que se encuentra en la figura \@ref(fig:Mean), pero esta vez considerando la media recortada al $10\%$. Para ello, se omite el $10\%$ de las curvas con menor profundidad. Este proceso se realizó mediante el argumento $trim$, asociado a la función $mean.fd(\dot)$.
+
+
+```{r var3d,fig.cap="Superficie asociada a la función de varianza y covarianza de la realización obtenida.",message=FALSE,echo=FALSE,warning=FALSE}
+var_fd<-var.fd(fit_fd$fd)
+grid=seq(275,560,by=0.5)
+W.cov.mat=eval.bifd(grid, grid, var_fd)
+persp(grid, grid, W.cov.mat, xlab="s",
+      ylab="t", zlab="c(s,t)")
+```
+
+
+
+```{r Contornos,fig.cap="Curvas de nivel calculadas para la función de varianzas y covarianzas.",message=FALSE,echo=FALSE,warning=FALSE}
+contour(grid, grid, W.cov.mat, lwd=2)
+```
+
+
+
+
+Por otro lado, la figura \@ref(fig:var3d) muestra la superficie asociada a la función de varianza y covarianza representada sobre el plano. La diagonal correspondiente a dicha superficie representa la función de varianza, mientras que los valores fuera de la diagonal se asocian con la función de covarianza en dos instantes del tiempo diferentes. La figura \@ref(fig:Contornos) muestra la función de varianza y covarianza, pero esta vez representada mediante curvas de nivel. En dichas figuras se observan dos picos. El primero de ellos y más alto se ubica en valores de medición entre 300 y 400, mientras que el segundo se ubica en valores de medición cercanos a 450. En el resto de la figura se observa un comportamiento decreciente en ubicaciones (en el plano cartesiano) diferentes a las mencionadas anteriormente.
+
+
+
+
+
+
+
+
+```{r mediana,fig.cap="Funciones estimadas junto con la función mediana partir de las profundidades MBD.",message=FALSE,echo=FALSE,warning=FALSE}
+grid=seq(275,560,by=0.5)
+fD = fData( grid, t(datos_1))
+median_univariate=median_fData(fD,"MBD")$values
+Curva=seq(275,560,by=0.5)
+Median=t(as.matrix(median_univariate))
+
+summary_stats<-data.frame(Curva,
+                          Median)
+
+datos_2=datos_2[,Curva:=rep(seq(275,560,by=0.5),ncol(datos_1))]
+
+ggplot()+
+  geom_line(data=datos_2 ,aes(x=Curva,y=Suggar,group=Medicion),color="darkorange",size=1,alpha=0.14)+
+  geom_line(data=summary_stats,aes(x=Curva,y=Median),size=2,color="darkred",linetype="twodash")+
+  guides(color=FALSE)+theme_bw()+xlab("Medición")+ylab("Medición espectrometrica")
+```
+
+ Para este documento se consideró la función de la banda de profundidad modificada, las cuales se denotan por "MBD", por sus siglás en inglés. La figura \@ref(fig:mediana) muestra las 268 funciones y la curva mediana, la cual se obtuvo a partir de las profundidades calculadas. Para ello, se calculó la MBD para las 268 curvas y se seleccionó la mayor.
+
+
+
+```{r boxplot,fig.cap="Boxplot funcional univariado para las funciones seleccionadas en Y_5",message=FALSE,echo=FALSE,warning=FALSE}
+boxplot_1<-fbplot(fD)
+```
+
+La figura \@ref(fig:boxplot_2) muestra el boxplot funcional con una modificación referente a la tasa de outliers permitidos. En este caso se consideró una tasa de outliers de 0.007. Esta modificación va a ampliar las bandas que determinan las curvas que son atípicas y las que no. 
+
+```{r boxplot_2,fig.cap="Boxplot funcional univariado para las funciones seleccionadas en Y_5 con una tasa de outliers de 0.007",message=FALSE,echo=FALSE,warning=FALSE}
+boxplot_2<-fbplot(fD,Fvalue=1.7)
+```
+
+Para determinar si hay puntos outlier se elaboró un boxplot functional, el cual se ilustra en la figura \@ref(fig:boxplot), con sus parámetros dados por default para un primer acercamiento. En este gráfico, las curvas azules denotan los límites y los cuartiles funcionales, mientras que las líneas que se presentan en otras tonalidades corresponden a las funciones outliers. Mediante este proceso se encontró un total de `r length(boxplot_1$ID_outliers)` curvas atípicas. Los números asociados a éstas curvas son `r paste0(boxplot_1$ID_outliers,collapse=", ")`.
+
+
+
+```{r Percentil90,fig.cap="Curvas suavizadas de las mediciones correspondientes a las 268 curvas, junto con su percentil 90, en color negro.",message=FALSE,echo=FALSE,warning=FALSE}
+grid=seq(275,560,by=0.5)
+fD = fData( grid, t(datos_1))
+Depths<-MBD(fD)
+df_depths<-data.frame(Curve_id=1:268,
+Depths) %>% as.data.table()
+
+df_depths<-df_depths[order(df_depths$Depths)]
+columns_IC<-df_depths[(nrow(df_depths)-round(nrow(df_depths)/100*80)):nrow(df_depths),Curve_id]
+
+up_low<-map_dbl(columns_IC,~sum(datos_1[,.x]-t(median_fData(fD)$values)))
+df_depths_2<-cbind(up_low,df_depths[(nrow(df_depths)-round(nrow(df_depths)/100*80)):nrow(df_depths)])
+df_depths_3<-df_depths_2 %>% filter(up_low>0) %>% arrange(Depths)
+df_depths_4<-df_depths_2 %>% filter(up_low<0) %>% arrange(Depths)
+Curve_up<-df_depths_3[1,Curve_id]
+Curve_low<-df_depths_4[1,Curve_id]
+
+ggplot()+
+  geom_line(data=datos_2 ,aes(x=Curva,y=Suggar,group=Medicion),color="darkorange",size=1,alpha=0.3)+
+  geom_line(data=datos_2[datos_2$Medicion==Curve_up],aes(x=Curva,y=Suggar),size=2,color="black",linetype="twodash")+
+  guides(color=FALSE)+theme_bw()+xlab("Medición")+ylab("Medición espectrometrica")
+```
+
+
+```{r Percentil95,fig.cap="Curvas suavizadas de las mediciones correspondientes a las 268 curvas, junto con su percentil 95, en color negro.",message=FALSE,echo=FALSE,warning=FALSE}
+Depths<-MBD(fD)
+df_depths<-data.frame(Curve_id=1:268,
+                      Depths) %>% as.data.table()
+
+df_depths<-df_depths[order(df_depths$Depths)]
+columns_IC<-df_depths[(nrow(df_depths)-round(nrow(df_depths)/100*90)):nrow(df_depths),Curve_id]
+up_low<-map_dbl(columns_IC,~sum(datos_1[,.x]-t(median_fData(fD)$values)))
+df_depths_2<-cbind(up_low,df_depths[(nrow(df_depths)-round(nrow(df_depths)/100*90)):nrow(df_depths)])
+df_depths_3<-df_depths_2 %>% filter(up_low>0) %>% arrange(Depths)
+df_depths_4<-df_depths_2 %>% filter(up_low<0) %>% arrange(Depths)
+Curve_up<-df_depths_3[1,Curve_id]
+
+ggplot()+
+  geom_line(data=datos_2 ,aes(x=Curva,y=Suggar,group=Medicion),color="darkorange",size=1,alpha=0.3)+
+  geom_line(data=datos_2[datos_2$Medicion==Curve_up],aes(x=Curva,y=Suggar),size=2,color="black",linetype="twodash")+
+  guides(color=FALSE)+theme_bw()+xlab("Medición")+ylab("Medición espectrometrica")
+```
+
+```{r Regioncentral75,fig.cap="Curvas suavizadas de las mediciones correspondientes a las 268 curvas, junto con la región central de un 75% denotada por las dos bandas en color negro.",message=FALSE,echo=FALSE,warning=FALSE}
+Depths<-MBD(fD)
+df_depths<-data.frame(Curve_id=1:268,
+                      Depths) %>% as.data.table()
+
+df_depths<-df_depths[order(df_depths$Depths)]
+columns_IC<-df_depths[(nrow(df_depths)-round(nrow(df_depths)/100*75)):nrow(df_depths),Curve_id]
+up_low<-map_dbl(columns_IC,~sum(datos_1[,.x]-t(median_fData(fD)$values)))
+df_depths_2<-cbind(up_low,df_depths[(nrow(df_depths)-round(nrow(df_depths)/100*75)):nrow(df_depths)])
+df_depths_3<-df_depths_2 %>% filter(up_low>0) %>% arrange(Depths)
+df_depths_4<-df_depths_2 %>% filter(up_low<0) %>% arrange(Depths)
+Curve_up<-df_depths_3[1,Curve_id]
+Curve_low<-df_depths_4[1,Curve_id]
+
+ggplot()+
+  geom_line(data=datos_2 ,aes(x=Curva,y=Suggar,group=Medicion),color="darkorange",size=1,alpha=0.3)+
+  geom_line(data=datos_2[datos_2$Medicion==Curve_up],aes(x=Curva,y=Suggar),size=2,color="black",linetype="twodash")+
+  geom_line(data=datos_2[datos_2$Medicion==Curve_low],aes(x=Curva,y=Suggar),size=2,color="black",linetype="twodash")+
+  guides(color=FALSE)+theme_bw()+xlab("Medición")+ylab("Medición espectrometrica")
+```
+
+Para obtener los percentiles funcionales lo que se realiza es encontrar su región central asociada, de forma que al tomar su límite inferior o superior, éste coincida con el percentil deseado. Esto quiere decir que para el percentil 90 lo que se realiza es encontrar las curvas que separan la región central del $80\%$, para luego tomar el límite superior de esta región central y obtener el percentil deseado. Estos cálculos se realizaron mediante la profundidad MBD. Las figuras \@ref(fig:Percentil90) y \@ref(fig:Percentil95) muestran las curvas suavizadas construidas a partir de la realización, además de los percentiles 90 y 95 en líneas punteadas negras, respectivamente. Por otro lado la figura \@ref(fig:Regioncentral75) muestra las mismas curvas suavizadas, pero esta vez con dos bandas en color negro que delimitan la región central del $75\%$. 
+
+
+```{r Medianamul,message=FALSE,echo=FALSE,warning=FALSE,fig.cap="Mediana funcional multivariada correspondiente a la realización considerada."}
+grid=seq(275,560,by=0.5)
+OptimalNumBasis<-15
+spline_basis=create.bspline.basis(rangeval=c(min(datos_2$Curva),max(datos_2$Curva)),nbasis=OptimalNumBasis)
+fdParobj<- fdPar(fdobj=spline_basis, Lfdobj=2, lambda=10^(2.05))
+grid=seq(275,560,by=0.5)
+list_fd<-map(1:7,function(k){
+  datos_1<-datos$X[,seq(571*(k-1)+1,571*(k),1)]
+  datos_1<-datos_1 %>% t()
+  datos_2<-datos_1 %>%
+    as.data.table() %>%
+    data.table::melt(value.name="Suggar") %>% as.data.table()
+  
+  datos_2<-datos_2[,Medicion := as.numeric(str_replace_all(variable,"V",""))]
+  datos_2=datos_2[,Curva:=rep(seq(275,560,by=0.5),ncol(datos_1))]
+  predict_fd<-map_dfc(1:268,
+                      ~ggplot_fd(df=datos_2,iter=.x,fdParobj)) %>% as.data.table()
+  predict_fd<-predict_fd %>% t()
+  return(predict_fd)
+})
+mfD=mfData(grid,list_fd)
+
+multivariate_median=median_mfData(mfD)
+
+labels<-paste0("Y_",c(340,325,305,290,255,240,230))
+list=map2_dfr(1:7,labels,function(.x,.y){
+  data.frame(Median=t(multivariate_median$fDList[[.x]]$values),Label=.y,t=seq(275,560,by=0.5))
+})
+
+list %>% ggplot()+geom_line(aes(t,Median),color="midnightblue",size=1)+facet_wrap(~Label,scales="free")+
+  theme_bw()
+```
+
+La figura \@ref(fig:Medianamul) es una representación de la mediana funcional multivariada. Cada uno de los recuadros en dicha figura corresponde a una de las categorías de las diferentes longitudes, de acuerdo a como se muestra en los respectivos encabezados.
+
+
+```{r boxplotm,message=FALSE,echo=FALSE,warning=FALSE,fig.cap="Boxplot funcional multivariado correspondiente a la realización funcional multivariada Y",fig.height=8}
+par(mar=c(1,1,1,1))
+boxplot_multivariate<-fbplot(mfD)
+```
+
+En la figura \@ref(fig:boxplotm) muestra los boxplot generados a partir de la realización multivariada funcional. Análogamente al caso univariado las líneas azules denotan los límites y cuartiles funcionales correspondientes a cada realización funcional por separado, mientras que las líneas en otros colores se asocian con las curvas outliers detectadas por esta metodología. A partir de esta alternativa, se encuentran un total de `r length(boxplot_multivariate$ID_outliers)` curvas atípicas y sus códigos son `r  paste0(boxplot_multivariate$ID_outliers,collapse=", ")`.
+
+
+
+```{r ,message=FALSE,echo=FALSE,warning=FALSE}
+cor_kendall<-matrix(0,ncol=7,nrow=7)
+for(m in 1:7){
+  for(j in 1:7){
+    if(m!=j){
+    list_fd<-map(c(m,j),function(k){
+      datos$X[,seq(571*(k-1)+1,571*(k),1)]
+    })
+    mfD=mfData(grid,list_fd)
+    cor_kendall[m,j]=cor_kendall(mfD,ordering="area")
+    }else{
+      cor_kendall[m,j]=1
+    }
+  }  
+}
+
+list_fd<-map(1:7,function(k){
+  datos$X[,seq(571*(k-1)+1,571*(k),1)]
+})
+
+mfD=mfData(grid,list_fd)
+```
+
+
+
+```{r Corkendall,fig.cap="Gráfico de correlaciones de Kendall a partir de la realización multivariada funcional.",message=FALSE,echo=FALSE,warning=FALSE}
+corrplot(cor_kendall, type = "upper", #order = "hclust", 
+         tl.col = "black", tl.srt = 45,sig.level=0.01)
+```
+
+```{r Corspearman,fig.cap="Gráfico de correlaciones de Spearman a partir de la realización multivariada funcional.",message=FALSE,echo=FALSE,warning=FALSE}
+corrplot(cor_spearman(mfD), type = "upper", #order = "hclust", 
+         tl.col = "black", tl.srt = 45,sig.level=0.01)
+```
+
+La obtención de la correlación de Kendall entre dos procesos funcionales se realiza mediante la concordancia entre curvas, mientras que el coeficiente de Spearman se realiza calculando el coeficiente de correlación de Pearson entre índices generados para cada una de las curvas. La figura \@ref(fig:Corkendall) es una representación gráfica de una matriz de correlaciones. Allí se observa que la correlacion es considerable con el proceso inmediatamente anterior en términos de las longitudes consideradas. La obtención de las correlaciones de Kendall se realizaron mediante el criterio del máximo, lo cual determina si una curva es mayor que otra. Por otro lado, la figura \@ref(fig:Corspearman) es una representación análoga, pero esta vez a partir de la correlación de Spearman. En este caso, se observa que los procesos funcionales están correlacionados positivamente en su gran mayoria. La teoría correspondiente a las correlaciones de Spearman y de Kendall se puede consultar en @valencia2014spearman y @valencia2019kendall, respectivamente. El cálculo realizado para la correlación de Spearman  La obtención de estas correlaciones se realizó mediante las funciones $cor\_kendall$ y $cor\_spearman$ de la librería $roahd$.
+
+En la literatura se pueden encontrar diversas propuestas para el cálculo de profundidades. Una de las alternativas es propuesta por @narisetty2016extremal , denotada por profundidad extrema. La motivación para su propuesta se da a partir del hecho de que algunas de las alternativas pueden no ser robustas ante valores atípicos en regiones pequeñas del dominio. Esta propuesta penaliza funciones en intervalos pequeños, incluso si tienen un comportamiento promedio en el resto del dominio. En este articulo, de igual manera se menciona que si se desea caracterizar el comportamiento general de las funciones, otras alternativas para el cálculo de las profundidades de las curvas serían preferibles. 
+
+El cálculo de la profundidad extrema se realiza como sigue:
+
+
+Sea $g(t)$ una función definida sobre el intervalo $[0,1]$. Se define la profundidad punto a punto de $g(t)$ con respecto a un conjunto de funciones $S:=\{f_1(t),f_2(t),\dots,f_n(t)\}$, como se muestra en la ecuación \eqref{eq1}
+
+\begin{equation}\label{eq1}
+D_g (t,S)=1-\frac{|\sum_{i=1}^n I_{f_i(t)<g(t)}-I_{f_i(t)>g(t)}|}{n},
+\end{equation}
+
+\noindent donde $I_A(\cdot)$ representa la función indicadora asociada al evento A. Sea $\Phi_g (\cdot)$ la función de distribución acumulada de los valores $D_g (t,S)$ referente a la curva $g$ en los diferentes tiempos de medición $t \in [0,1]$. En otras palabras, la función $\Phi_g (\cdot)$ se define como se muestra en la ecuación \eqref{eq2}.
+
+\begin{equation}\label{eq2}
+\Phi_g (r)=\int_0^1 I_{D_g (t,S)<r} dt.
+\end{equation}
+
+
+La comparación entre dos curvas $g$ y $h$ se realiza mediante $\Phi_g (r)$ y $\Phi_h (r)$, de tal forma que se puede determinar si $g \succ h$. De esta manera, la profundidad extrema de una función $g$ con respecto un conjunto de curvas $S$ se define como se muestra en la ecuación \eqref{eq3}.
+
+
+\begin{equation}\label{eq3}
+ED(g,S)= \frac{\sum I_{i: g \succeq f_i}}{n}.
+\end{equation}
+
+La función $extremal\_depth(\dot)$ del paquete $fdaoutlier$ [ver @fdaoutlier] calcula las profunidades extremas descritas anteriormente. La figura \@ref(fig:extremed) muestra las diferentes curvas estimadas, donde cada color representa la profundidad extrema calculada para cada una de las curvas. 
+
+
+```{r extremed,fig.cap="Gráfico de funciones suavizadas, donde el color de la curva representa la profundidad extrema.",message=FALSE,echo=FALSE,message=FALSE,warning=FALSE}
+Extremal_depth <- extremal_depth(dts = t(datos_1))
+ex_depths_2<-data.frame(Medicion=1:268,Extremal_depth)
+
+datos_3<-merge(datos_2,ex_depths_2,on="Medicion",all.x = TRUE)
+ggplot()+
+geom_line(data=datos_3 ,aes(x=Curva,y=Suggar,group=Medicion,color=Extremal_depth),size=1)+
+  scale_color_gradient(low="darkblue", high="red")+theme_bw()
+```
+
+
+El artículo de @dai2019directional nos brinda una herramienta para el cálculo de outliers no solo basados en profundidad si no en una generalización que nos permite su visualización direccional, es decir encontrando outliers tanto de magnitud como de forma, lo que permite un mejor descripción de la centralidad de las curvas y de la variabilidad entre ellas.
+
+La metodología se puede implementar tanto univariada$(p = 1)$ como multivariamente $(p \geq 2)$, este último caso teniendo presente la correlación de los procesos, que el artículo presenta su eficacia a través de las diferentes simulaciones.
+
+
+
+
+La manera en que se captura tanto la magnitud como la dirección de ``outlyingness'' es calculando
+$$ O(X(t),F_{X(t)}) = \{1/d(X(t),F_{X(t)}) - 1\}\cdot \mathbf{v}(t), $$
+\noindent donde $X(t)$ es el proceso funcional multivariado, $F_{X(t)}$ su respectiva funcion de distribución, que en el caso muestral corresponderá a su correspondiente nube de observaciones, $d(\dot,\dot)$ una función de profundidad y $\mathbf{v}(t)$ un vector unitario que apunta de la media del proceso ($Z(t)$) al proceso ($X(t)$).
+
+
+
+
+
+
+
+A partir de esta medida de atipicidad se tiene el cálculo de las siguientes medidas para functional directional outlyingness (FO), mean directional outlyingness (MO) y variation of directional outlyingness (VO), en su versión discreta 
+
+
+\begin{align}
+ \nonumber FO(X,F_X) &= 1/n \sum_k{||O(X(t_k),F_{X(t_k)})||^2w(t_k)} \\
+\nonumber MO(X,F_X) &= 1/n \sum_k{O(X(t_k), F_{X(t_k)})w(t_k)} \\
+\nonumber VO(X,F_X) &= 1/n \sum_k{||O(X(t_k), F_{X(t_k)}) - MO(X, F_X)||^2 w(t_k)} \\
+\nonumber
+\end{align}
+
+
+
+
+Lo interesante es que $FO(X, F_X) = ||MO(X, F_X)||^2 + VO(X,F_X)$, es decir la atipicidad total se puede separar en outlier de magnitud $(MO)$ y de forma $(VO)$ con lo que basta ver quienes tienen estos valores más altos en comparación a la nube, así mediante la funcion $dir\_out$ del paquete $fdaoutlier$, el cual usa la profundidad de proyección con base en el outlyingness de Stahel–Donoho $(X(t) - Mediana / MAD)$ se obtiene para cada uno de los procesos y de las observaciones un valor MO y un valor VO del proceso multivariado para cada observación, en las figura _ se puede ver solo el caso del proceso $X_3$ en el cual se destacan las curvas 157, 158, 197, 198, 199, 200 y 201 por sus altos valores en VO lo que nos indica que pueden ser outliers mas de forma que de magnitud.
+
+
+Para el análisis multivariado debido a la proyección en $\mathrm{R}^p$ en este caso $p = 7$ no es posible representar en un plano mas de 2 procesos junto con el VO, por eso a manera de ejemplificación se obtienen las figuras \@ref(fig:dirout2) y \@ref(fig:dirout3), para los procesos $X_1,X_2$ y $X_4,X_5$ respectivamente. Cabe destacar aquellos puntos que indican un outlier de magnitud mas no de escala, el caso de la curva 71 para todos los procesos en estudio, incluso evaluandolo en los procesos 6 y 7 también destaca con un valor grande de MO mas no de VO, así bajo esta metodología la curva 71 (multivariadamente) es considerada un outlier y sabemos que es de magnitud, en el caso de forma destacan muchas mas curvas 157, 158, 197, 198, 199, 200 y 201.
+
+```{r echo=FALSE,message=FALSE,warning=FALSE}
+data<-readMat("E:/Universidad Nacional/PhD/Functional data analysis/Taller 1/Programa documento/data.mat")
+
+fd_smooth = array(dim = c(268,13,7))
+datos = array(dim = c(571,268,7))
+base_bspline <- create.bspline.basis(c(1, 571), 15)
+param_lambda <- fdPar(base_bspline,
+                      2,
+                      lambda = 112.2018)
+ndatos=571
+for (k in 1:7){
+  datos[,,k] <- t(data$X[,seq(571*(k-1)+1,571*(k),1)])
+  matrix_data <- as.matrix(datos[,,k])
+  
+  fd_smooth[,,k] <- t(predict(smooth.basis(argvals = seq(1,
+                                                         ndatos),
+                                           y = matrix_data,
+                                           fdParobj = param_lambda)$fd))
+}
+mr = fdaoutlier::dir_out(fd_smooth)
+data.plot=data.frame(x=mr$mean_outlyingness[,1],y=mr$var_outlyingness)
+```
+
+
+```{r  dirout1,fig.cap="MO y VO para el proceso $X_3$ basado en la profundidad proyectada.",echo=FALSE,message=FALSE,warning=FALSE}
+ggplot(data.plot,aes(x,y))+
+  geom_point(show.legend = FALSE)+
+  theme(plot.title = element_text(face = "bold",size=10,hjust = 0.5),axis.title.x=element_text(size=8),axis.title.y=element_text(size=8))+
+  labs(title="Directional Outlyingness")+xlab("MO (X3)")+ylab("VO")
+```
+
+```{r dirout2,fig.cap="MO y VO bivariado para los procesos $X_1$ y $X_2$ basado en la profundidad proyectada.",echo=FALSE,message=FALSE,warning=FALSE}
+scatterplot3d(cbind(mr$mean_outlyingness[,1],mr$mean_outlyingness[,2],mr$var_outlyingness),angle=55,mar=c(2.5,2.5,1.2,2),type="h",
+              mgp=c(1,0.5,0),lab=c(2, 2, 5),pch=19,main="dRP",
+              xlab=expression(MO~(X[1])),ylab=expression(MO~(X[2])),zlab="VO",box=FALSE)
+```
+
+
+```{r dirout3,fig.cap="MO y VO bivariado para los procesos $X_4$ y $X_5$ basado en la profundidad proyectada.",echo=FALSE,message=FALSE,warning=FALSE}
+scatterplot3d(cbind(mr$mean_outlyingness[,4],mr$mean_outlyingness[,5],mr$var_outlyingness),angle=55,mar=c(2.5,2.5,1.2,2),type="h",
+              mgp=c(1,0.5,0),lab=c(2, 2, 5),pch=19,main="dRP",
+              xlab=expression(MO~(X[4])),ylab=expression(MO~(X[5])),zlab="VO",box=FALSE)
+```
+
+
+
+
+
