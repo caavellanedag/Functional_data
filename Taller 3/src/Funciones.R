@@ -271,7 +271,36 @@ P_value_test_two_mean <- function(x, Y_mat_1, Y_mat_2, lambda, n_pca, n_times){
                     p_value_fpca = mean(Results_boots$T_fpca_boots > as.double(T_fpca_or))))
 }
 
-
+Cov_operators_test_stat <- function(x , Y_mat_1, Y_mat_2, pca_overall, lambda){
+  N <- ncol(Y_mat_1)
+  M <- ncol(Y_mat_2)
+  theta <- N/(N+M)
+  fitted_1 <- eval.fd(evalarg = x,
+                      fitted_fda(x = x, Y_mat = Y_mat_1, lambda = lambda)$fd)
+  fitted_2 <- eval.fd(evalarg = x,
+                      fitted_fda(x = x, Y_mat = Y_mat_2, lambda = lambda)$fd)
+  epsilon_x <- inprod(fitted_fda(x = x, Y_mat = Y_mat_1, lambda = lambda)$fd,
+                      pca_overall$harmonics)
+  
+  epsilon_y <- inprod(fitted_fda(x = x, Y_mat = Y_mat_2, lambda = lambda)$fd,
+                      pca_overall$harmonics)
+  lambda_x <- 1/N * map_dbl(1:1,~sum(epsilon_x[,.x]^2))
+  lambda_y <- 1/M * map_dbl(1:1,~sum(epsilon_y[,.x]^2))
+  
+  
+  C_x <- map_dfc(1:nrow(epsilon_x),function(.x){
+    epsilon_x[.x,1] * fitted_1[,.x]
+  }) %>% as.matrix() %>% rowMeans()
+  
+  C_y <- map_dfc(1:nrow(epsilon_y),function(.x){
+    epsilon_y[.x,1] * fitted_2[,.x]
+  }) %>% as.matrix() %>% rowMeans()
+  
+  
+  Numerator <- inprod(fitted_fda(x = x, Y_mat = C_x - C_y, lambda = lambda)$fd , pca_overall$harmonics)^2
+  T <- (N+M)/2 * theta * (1-theta) * (Numerator)/((theta * lambda_y + (1-theta)*lambda_x)*(theta * lambda_x + (1-theta)*lambda_y))
+  return(T)
+}
 
 
 

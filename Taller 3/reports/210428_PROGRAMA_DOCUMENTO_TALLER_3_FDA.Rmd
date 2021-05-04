@@ -214,13 +214,13 @@ Se realizó la programación tanto de la estadística de prueba como el método 
 ```{r warning=FALSE,message=FALSE}
 Check_bajos <- Check_differences(x = 1:100, Y_mat = Matrix_bajo_without,
                n_pca = 1, lambda = lambda_optimo,
-               n_times = 10)
+               n_times = 500)
 Check_bajos$K
 Check_bajos$p_values
 
 Check_altos <- Check_differences(x = 1:100, Y_mat = Matrix_alto_without,
                n_pca = 1, lambda = lambda_optimo,
-               n_times = 10)
+               n_times = 500)
 Check_altos$K
 Check_altos$p_values
 ```
@@ -283,7 +283,7 @@ A continuación se presentan los valores p correspondientes a las estadísticas 
 ```{r}
 Test_one_mean_fda(x = 1:100, Y_mat = Matrix_alto_without,
                   lambda = lambda_optimo,
-                  n_pca = 1, mean = mean(Matrix_alto_without), n_times = 10)
+                  n_pca = 1, mean = mean(Matrix_alto_without), n_times = 500)
 ```
 
 ```{r echo = FALSE, warning = FALSE, message = FALSE}
@@ -344,10 +344,10 @@ La determinación de los valores y funciones propias de $\mathcal{C}_\varphi$ se
 
 La determinación de valores $p$ se realizó de acuerdo a la metodología dada en \citet{paparoditis2016bootstrap}, que se describió previamente. Los resultados se presenta a continuación, donde se observa que los valores $p$ son menores a 0.05, por lo cual se concluye que hay suficiente evidencia para rechazar la hipótesis de igualdad de funciones promedio poblacionales.
 
-```{r}
+```{r echo=FALSE, warning=FALSE,message=FALSE}
 P_value_test_two_mean(x = 1:100, Y_mat_1 = Matrix_alto_without,
                       Y_mat_2 = Matrix_bajo_without, lambda = lambda_optimo,
-                      n_pca = 1, n_times = 10)
+                      n_pca = 1, n_times = 500)
 ```
 
    + Verifique si el operador de covarianza de la carne con alto contenido de grasa es igual al operador de covarianza con bajo nivel de grasa. Verifique los supuestos asociados a la prueba de hipótesis.
@@ -382,49 +382,26 @@ Mientras que por otro lado,
 
 La determinación del valor $p$ en este caso, se realiza a partir de la distribución $\chi^2$ con $\frac{p(p+1)}{2}$ grados de libertad. Se observa que el valor $p$, utilizando la distribución $\chi^2$, es mayor a 0.05, por lo cual los operadores son estadísticamente diferentes. Por otra parte, mediante el método bootstrap el valor $p$ es menor a 0, por lo cual en ese caso se rechaza la hipótesis de igualdad entre operadores de covarianza. Los resultados mencionados se presentan a continuación:
 
+
+
+
+
+
+
 ```{r echo=FALSE, warning=FALSE,message=FALSE}
 Y_mat_1 =  Matrix_bajo_without
 Y_mat_2 =  Matrix_alto_without
 n_pca = 1
 lambda = lambda_optimo
-n_times <- 10
-
+n_times <- 500
+N <- ncol(Matrix_bajo_without)
+M <- ncol(Matrix_alto_without)
 
 Y_mat <- cbind(Y_mat_1,Y_mat_2)
 pca_overall <- pca.fd(fitted_fda(x = 1:100, Y_mat = Y_mat, lambda = lambda_optimo)$fd,
                       nharm = n_pca)
 
-Cov_operators_test_stat <- function(x , Y_mat_1, Y_mat_2, pca_overall, lambda){
-N <- ncol(Y_mat_1)
-M <- ncol(Y_mat_2)
-theta <- N/(N+M)
-fitted_1 <- eval.fd(evalarg= x,
-                    fitted_fda(x = x, Y_mat = Y_mat_1, lambda = lambda)$fd)
-fitted_2 <- eval.fd(evalarg= x,
-                    fitted_fda(x = x, Y_mat = Y_mat_2, lambda = lambda)$fd)
-epsilon_x <- inprod(fitted_fda(x = x, Y_mat = Y_mat_1, lambda = lambda)$fd,
-pca_overall$harmonics)
-
-epsilon_y <- inprod(fitted_fda(x = x, Y_mat = Y_mat_2, lambda = lambda)$fd,
-       pca_overall$harmonics)
-lambda_x <- 1/N * map_dbl(1:1,~sum(epsilon_x[,.x]^2))
-lambda_y <- 1/M * map_dbl(1:1,~sum(epsilon_y[,.x]^2))
-
-
-C_x <- map_dfc(1:nrow(epsilon_x),function(.x){
-epsilon_x[.x,1] * fitted_1[,.x]
-}) %>% as.matrix() %>% rowMeans()
-
-C_y <- map_dfc(1:nrow(epsilon_y),function(.x){
-  epsilon_y[.x,1] * fitted_2[,.x]
-}) %>% as.matrix() %>% rowMeans()
-
-
-Numerator <- inprod(fitted_fda(x = x, Y_mat = C_x - C_y, lambda = lambda)$fd , pca_overall$harmonics)^2
-T <- (N+M)/2 * theta * (1-theta) * (Numerator)/((theta * lambda_y + (1-theta)*lambda_x)*(theta * lambda_x + (1-theta)*lambda_y))
-return(T)
-}
-
+x = 1:100
 Mean_2 <- eval.fd(evalarg = x,
                   mean.fd(fitted_fda(x = x, Y_mat = Y_mat_2, lambda = lambda)$fd))
 Mean_1 <- eval.fd(evalarg = x,
@@ -466,17 +443,17 @@ Results_boots <- map_dfr(1:n_times,function(n){
 })
 ```
 
-<!-- ```{r warning=FALSE, message= FALSE} -->
-<!-- Test_original <- Cov_operators_test_stat(x = 1:100 , Y_mat_1 = Matrix_bajo_without, -->
-<!--                                          Y_mat_2 = Matrix_alto_without, -->
-<!--                                          pca_overall = pca_overall, -->
-<!--                                          lambda = lambda_optimo) -->
+```{r warning=FALSE, message= FALSE}
+Test_original <- Cov_operators_test_stat(x = 1:100 , Y_mat_1 = Matrix_bajo_without,
+                                         Y_mat_2 = Matrix_alto_without,
+                                         pca_overall = pca_overall,
+                                         lambda = lambda_optimo)
 
-<!-- p_value <- pchisq(Test_original, n_pca*(n_pca+1)/2, lower.tail = FALSE) -->
-<!-- p_value -->
+p_value <- pchisq(Test_original, n_pca*(n_pca+1)/2, lower.tail = FALSE)
+p_value
 
-<!-- mean(Results_boots$Test_stat_boots > as.double(Test_original)) -->
-<!-- ``` -->
+mean(Results_boots$Test_stat_boots > as.double(Test_original))
+```
 
 
 Se incluyen en los procedimientos de prueba las propuestas vistas en clase y las presentadas en los papers \citet{paparoditis2016bootstrap} y \citet{lopez2021depth}.
