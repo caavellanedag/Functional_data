@@ -29,6 +29,15 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 
+(1) Resuelva el ejercicio 4.2 del libro de \citet{kokoszka2017introduction}.
+(2) Usando el dataset TECATOR:
+
+* Formule un modelo de regresión entre la cantidad de grasa (variable de respuesta) y las curvas espectrométricas (variable regresora) que caracterizan las muestras de carne dadas.
+
+* Encuentre y analice las estimaciones del parámetro Beta usando las tres propuestas presentadas en el libro de \citet{kokoszka2017introduction}.
+* Encuentre e interprete el coeficiente de determinación.
+* Formule un modelo de regresión adicionando la información suministrada por la primera derivada de las curvas espectrométricas. Encuentre las estimaciones de los parámetros y el coeciente de determinación. Compare estos resultados con los resutlados anteriores.
+
 ```{r echo=FALSE, message=FALSE, warning= FALSE}
 require(pacman)
 p_load(tidyverse,openxlsx,here,haven,data.table,fda,fda.usc,roahd,fdaoutlier,caret)
