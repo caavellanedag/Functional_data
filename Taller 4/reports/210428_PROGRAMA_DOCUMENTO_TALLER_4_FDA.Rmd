@@ -1,0 +1,51 @@
+---
+title: "Análisis de datos funcionales - Taller 4"
+author: "Valeria Bejarano - Camilo Avellaneda"
+header-includes:
+   - \usepackage{amsmath}
+   - \usepackage{graphics}
+   - \usepackage[inline]{enumitem}
+   - \usepackage{amsbsy}
+   - \usepackage{multirow}
+   - \usepackage{mathtools}
+   - \usepackage{cancel}
+   - \usepackage{url}
+   - \usepackage{tikz}
+   - \usepackage{float}
+   - \usepackage{epstopdf}
+   - \usepackage{enumitem}
+   - \usepackage{bm}
+   - \usepackage{color, colortbl}
+   - \usepackage{natbib}
+output:
+  bookdown::pdf_document2:
+    citation_package: natbib
+bibliography: references.bib
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r echo=FALSE, message=FALSE, warning= FALSE}
+require(pacman)
+p_load(tidyverse,openxlsx,here,haven,data.table,fda,fda.usc,roahd,fdaoutlier,caret)
+p_load(maptools,sgeostat,scatterplot3d,car,fields,gstat,geoR)
+
+options(scipen=999)
+source("Z:/Universidad Nacional/PhD/Functional_data/Taller 3/src/Funciones.R")
+
+f.ref <- function(x){
+  stringr::str_extract(table_nums(x), "[^:]*")
+}
+
+f.ref2 <- function(x){
+  stringr::str_extract(fig_nums(x), "[^:]*")
+}
+fig_nums <- captioner::captioner(prefix = "Gráfico")
+```
+
+
+

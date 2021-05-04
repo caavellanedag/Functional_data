@@ -1,4 +1,4 @@
-#Se cargan las librerías
+#Se cargan las librer?as
 library(fda)
 library(tidyverse)
 library(data.table)
@@ -9,7 +9,7 @@ date<-str_replace(str_replace_all(Sys.Date(),"-",""),"20","")
 setwd("E:/Documentos Camilo/PhD/Functional data analysis")
 
 
-# Creación de las funciones -----------------------------------------------
+# Creaci?n de las funciones -----------------------------------------------
 
 SelectionNumBasis<-function(.x,.y){
   #lambda_10<-10^10
@@ -53,7 +53,7 @@ absorp_2<-absorp %>%
   data.table::melt(value.name="Absorbencia") %>% as.data.table()
 absorp_2<-absorp_2[,Medicion := as.numeric(str_replace_all(Var1,"V",""))]
 
-## Se pegan los grupos de acuerdo a las categorías de grasa
+## Se pegan los grupos de acuerdo a las categor?as de grasa
 colnames(endpoints)<-paste0("V",1:3)
 endpoints<-endpoints %>% as.data.table()
 endpoints[,c("Grupo","Llave"):= list(ifelse(V2>20,"Alto (Grasa>20)","Bajo (Grasa<=20)"),1:nrow(endpoints))]
@@ -61,19 +61,19 @@ absorp_3<-merge(absorp_2,endpoints[,c("Llave","V2","Grupo")],by.x="Var2",by.y="L
 
 absorp_3<-absorp_3[,Curva:=Var2]
 
-#Gráfico descriptivo de la realización
+#Gr?fico descriptivo de la realizaci?n
 descriptive_1<-absorp_2 %>% ggplot()+
   geom_line(aes(Medicion,Absorbencia,group=Var2),color="midnightblue")+
-  guides(color=F)+theme_bw()+xlab("Medición")+ylab("Absorbancia")
+  guides(color=F)+theme_bw()+xlab("Medici?n")+ylab("Absorbancia")
 
-#Gráfico descriptivo de la realización por grupo
+#Gr?fico descriptivo de la realizaci?n por grupo
 descriptive_2<-absorp_3 %>% 
   ggplot()+
   geom_line(aes(Medicion,Absorbencia,group=Var2),color="midnightblue")+
-  guides(color=F)+theme_bw()+xlab("Medición")+ylab("Absorbancia")+
+  guides(color=F)+theme_bw()+xlab("Medici?n")+ylab("Absorbancia")+
   facet_grid(.~Grupo)
 
-# Se exportan los gráficos descriptivos
+# Se exportan los gr?ficos descriptivos
 tiff(paste0(date,"_Descriptive_1_.tiff"), units="in", width=7, height=7, res=200)
 print({
   descriptive_1
@@ -87,7 +87,7 @@ print({
 dev.off()
 
 
-# Gráfico para obtener el número de bases ---------------------------------
+# Gr?fico para obtener el n?mero de bases ---------------------------------
 
 df<-map2_dfr(rep(4:35,each=nrow(absorp)),rep(1:nrow(absorp),32),~SelectionNumBasis(.x,.y))
 df<-data.table(df)
@@ -97,7 +97,9 @@ df[,.(MSE=sum(MSE),Bias_squared=sum(Bias_squared),
    by=.(Num_basis)] %>% melt(id.vars="Num_basis",variable.name="Variable",value.name="Value") %>% 
   ggplot()+geom_line(aes(x=Num_basis,Value,linetype=Variable,color=Variable),size=1.1)+
   scale_color_brewer(palette="Set1")+theme_bw()+ylab("Cuadrado medio del error total")+
-  xlab("Número de funciones base")+ylim(0,5)
+  xlab("N?mero de funciones base")+ylim(0,5)
+
+
 Summary_num_basis<-df[,.(MSE=sum(MSE),Bias_squared=sum(Bias_squared),
                          Var_estimator=sum(Var_estimator)),
                       by=.(Num_basis)]
@@ -110,7 +112,7 @@ print({
      by=.(Num_basis)] %>% melt(id.vars="Num_basis",variable.name="Variable",value.name="Value") %>% 
     ggplot()+geom_line(aes(x=Num_basis,Value,linetype=Variable,color=Variable),size=1.1)+
     scale_color_brewer(palette="Set1")+theme_bw()+ylab("Cuadrado medio del error total")+
-    xlab("Número de funciones base")+ylim(0,5)
+    xlab("N?mero de funciones base")+ylim(0,5)
 })
 dev.off()
 
@@ -119,7 +121,7 @@ Summary_num_basis[order(MSE),]
 OptimalNumBasis<-50
 
 
-# Selección del parámetro de suavizado ------------------------------------
+# Selecci?n del par?metro de suavizado ------------------------------------
 
 GCV<-map_dfc(1:ncol(t(absorp)),function(.y){
   map_dbl(seq(-5,5,by=0.05),function(.x){
@@ -142,7 +144,7 @@ df_gcv[which.min(df_gcv$GCV),]
 tiff(paste0(date,"_Selection_lambda_.tiff"), units="in", width=7, height=7, res=200)
 print({
   df_gcv %>% ggplot()+geom_point(aes(x=log10_lambda,GCV),size=1)+theme_bw()+
-    ylab("Validación cruzada generalizada")+xlab("Log10(lambda)")
+    ylab("Validaci?n cruzada generalizada")+xlab("Log10(lambda)")
 })
 dev.off()
 
@@ -189,7 +191,7 @@ ggplot(absorp_4)+
   geom_line(data=absorp_4 ,aes(x=Medicion,y=Fitted,group=Curva),color="darkorange",size=1,alpha=0.14)+
   geom_line(data=summary_stats,aes(x=Medicion,y=mean),size=2,color="darkred",linetype="twodash")+
   geom_line(data=summary_stats,aes(x=Medicion,y=Sd),size=2,color="green",linetype="twodash")+
-  guides(color=FALSE)+theme_bw()+xlab("Medición")+ylab("Absorbencia (Curvas ajustadas)")+
+  guides(color=FALSE)+theme_bw()+xlab("Medici?n")+ylab("Absorbencia (Curvas ajustadas)")+
   facet_grid(.~Grupo)
 
 tiff(paste0(date,"_Mean_sd_groups.tiff"), units="in", width=7, height=7, res=200)
@@ -198,7 +200,7 @@ print({
     geom_line(data=absorp_4 ,aes(x=Medicion,y=Fitted,group=Curva),color="darkorange",size=1,alpha=0.14)+
     geom_line(data=summary_stats,aes(x=Medicion,y=mean),size=2,color="darkred",linetype="twodash")+
     geom_line(data=summary_stats,aes(x=Medicion,y=Sd),size=2,color="green",linetype="twodash")+
-    guides(color=FALSE)+theme_bw()+xlab("Medición")+ylab("Absorbencia (Curvas ajustadas)")+
+    guides(color=FALSE)+theme_bw()+xlab("Medici?n")+ylab("Absorbencia (Curvas ajustadas)")+
     facet_grid(.~Grupo)
 })
 dev.off()
@@ -215,7 +217,7 @@ print({
     geom_line(data=absorp_4 ,aes(x=Medicion,y=Fitted,group=Curva),color="darkorange",size=1,alpha=0.14)+
     geom_line(data=summary_stats_2,aes(x=Medicion,y=mean),size=2,color="darkred",linetype="twodash")+
     geom_line(data=summary_stats_2,aes(x=Medicion,y=Sd),size=2,color="green",linetype="twodash")+
-    guides(color=FALSE)+theme_bw()+xlab("Medición")+ylab("Absorbencia (Curvas ajustadas)")+
+    guides(color=FALSE)+theme_bw()+xlab("Medici?n")+ylab("Absorbencia (Curvas ajustadas)")+
     facet_grid(.~Grupo)
 })
 dev.off()
@@ -279,7 +281,7 @@ df_selected[,c("labels","LI","LS"):=list(1:100,fitted-1.64*sqrt(0.07189111),
   ggplot()+
   geom_line(aes(labels,fitted))+geom_line(aes(labels,LI),linetype="twodash")+
   geom_line(aes(labels,LS),linetype="twodash")+ylab("Absorbencia (Curvas seleccionada)")+
-  xlab("Medición")+theme_bw()
+  xlab("Medici?n")+theme_bw()
 })
 dev.off()
 
@@ -318,14 +320,14 @@ derivadas_2<-rbind(deriv_altos_2.1 %>% mutate(labels=1:100) %>%
 tiff(paste0(date,"_Primera_derivada.tiff"), units="in", width=7, height=7, res=200)
 print({
   derivadas_1 %>% ggplot()+geom_line(aes(labels,Valor,group=Variable),color="midnightblue")+
-    guides(color=F)+theme_bw()+xlab("Medición")+ylab("D(Absorbancia)")+facet_grid(.~Grupo)
+    guides(color=F)+theme_bw()+xlab("Medici?n")+ylab("D(Absorbancia)")+facet_grid(.~Grupo)
 })
 dev.off()
 
 tiff(paste0(date,"_Segunda_derivada.tiff"), units="in", width=7, height=7, res=200)
 print({
 derivadas_2 %>% ggplot()+geom_line(aes(labels,Valor,group=Variable),color="midnightblue")+
-  guides(color=F)+theme_bw()+xlab("Medición")+ylab("D^2(Absorbancia)")+facet_grid(.~Grupo)
+  guides(color=F)+theme_bw()+xlab("Medici?n")+ylab("D^2(Absorbancia)")+facet_grid(.~Grupo)
 })
 dev.off()
 
@@ -341,7 +343,7 @@ tiff(paste0(date,"_Componente_principal.tiff"), units="in", width=7, height=7, r
 print({
 data.table(labels=1:100,Valor=predict(W.pca$harmonics,newdata=1:100)) %>% 
   ggplot()+geom_line(aes(labels,Valor.PC1),color="midnightblue",size=1.2)+
-  ylab("Componente principal")+xlab("Medición")+theme_bw()
+  ylab("Componente principal")+xlab("Medici?n")+theme_bw()
 })
 dev.off()
 as.numeric(round(W.pca$harmonics$coefs,2))
@@ -363,7 +365,7 @@ df[,.(MSE=sum(MSE),Bias_squared=sum(Bias_squared),
   ggplot()+
   geom_line(aes(x=Num_basis,Value,linetype=Variable,color=Variable),size=1.1)+
   scale_color_brewer(palette="Set1")+theme_bw()+ylab("Cuadrado medio del error total")+
-  xlab("Número de funciones base")
+  xlab("N?mero de funciones base")
   Summary_num_basis<-df[,.(MSE=sum(MSE),Bias_squared=sum(Bias_squared),
                          Var_estimator=sum(Var_estimator)),
                       by=.(Num_basis)]
@@ -393,7 +395,7 @@ df[,.(MSE=sum(MSE),Bias_squared=sum(Bias_squared),
     ggplot()+
     geom_line(aes(x=Num_basis,Value,linetype=Variable,color=Variable),size=1.1)+
     scale_color_brewer(palette="Set1")+theme_bw()+ylab("Cuadrado medio del error total")+
-    xlab("Número de funciones base")
+    xlab("N?mero de funciones base")
   Summary_num_basis<-df[,.(MSE=sum(MSE),Bias_squared=sum(Bias_squared),
                            Var_estimator=sum(Var_estimator)),
                         by=.(Num_basis)]

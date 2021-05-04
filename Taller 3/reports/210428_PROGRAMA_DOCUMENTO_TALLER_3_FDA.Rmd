@@ -1,0 +1,495 @@
+---
+title: "Análisis de datos funcionales - Taller 3"
+author: "Valeria Bejarano - Camilo Avellaneda"
+header-includes:
+   - \usepackage{amsmath}
+   - \usepackage{graphics}
+   - \usepackage[inline]{enumitem}
+   - \usepackage{amsbsy}
+   - \usepackage{multirow}
+   - \usepackage{mathtools}
+   - \usepackage{cancel}
+   - \usepackage{url}
+   - \usepackage{tikz}
+   - \usepackage{float}
+   - \usepackage{epstopdf}
+   - \usepackage{enumitem}
+   - \usepackage{bm}
+   - \usepackage{color, colortbl}
+   - \usepackage{natbib}
+output:
+  bookdown::pdf_document2:
+    citation_package: natbib
+bibliography: references.bib
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r echo=FALSE, message=FALSE, warning= FALSE}
+require(pacman)
+p_load(tidyverse,openxlsx,here,haven,data.table,fda,fda.usc,roahd,fdaoutlier,caret)
+p_load(maptools,sgeostat,scatterplot3d,car,fields,gstat,geoR)
+
+options(scipen=999)
+source("Z:/Universidad Nacional/PhD/Functional_data/Taller 3/src/Funciones.R")
+
+f.ref <- function(x){
+  stringr::str_extract(table_nums(x), "[^:]*")
+}
+
+f.ref2 <- function(x){
+  stringr::str_extract(fig_nums(x), "[^:]*")
+}
+fig_nums <- captioner::captioner(prefix = "Gráfico")
+data(tecator)
+
+absorp_2 <- absorp %>%
+  as.data.table() %>% base::t() %>% 
+  data.table::melt(value.name="Absorbencia") %>% as.data.table()
+absorp_2 <- absorp_2[,Medicion := as.numeric(str_replace_all(Var1,"V",""))]
+
+## Se pegan los grupos de acuerdo a las categor?as de grasa
+colnames(endpoints)<-paste0("V",1:3)
+endpoints<-endpoints %>% as.data.table()
+endpoints[,c("Grupo","Llave"):= list(ifelse(V2>20,"Alto (Grasa>20)","Bajo (Grasa<=20)"),1:nrow(endpoints))]
+absorp_3 <- merge(absorp_2,endpoints[,c("Llave","V2","Grupo")],by.x="Var2",by.y="Llave",all.x=TRUE)
+
+
+absorp_3 <- absorp_3[,Curva:=Var2]
+
+#Gr?fico descriptivo de la realizaci?n
+descriptive_1 <- absorp_2 %>% ggplot()+
+  geom_line(aes(Medicion,Absorbencia,group=Var2),color="midnightblue")+
+  guides(color=F)+theme_bw()+xlab("Medición")+ylab("Absorbancia")
+
+#Gr?fico descriptivo de la realizaci?n por grupo
+descriptive_2 <- absorp_3 %>% 
+  ggplot()+
+  geom_line(aes(Medicion,Absorbencia,group=Var2),color="midnightblue")+
+  guides(color=F)+theme_bw()+xlab("Medición")+ylab("Absorbancia")+
+  facet_grid(.~Grupo)
+```
+
+
+(1) Usando el dataset TECATOR:
+
+\textbf{Descripción de la base:}
+
+Este trabajo hace uso de la paquetería $fda$, $fda.usc$, $roahd$ y $tidyverse$ \citep{fda,fda.usc,roahd} del software R \citep{R}. De manera preliminarse realiza un análisis exploratorio con el fin de visualizar las curvas en el dataset en general y según su contenido de grasa, con el objetivo de determinar qué conjunto de funciones base es el apropiado para realizar el suavizado. Las siguientes figuras muestran las curvas observadas, para todo el conjunto de curvas en el Gráfico 1 y de manera desagregada por su contenido de grasa en el Gráfico 2. Como no se observan comportamientos cíclicos se utiliza un conjunto base de B-splines, con lo que se procede a estimar el valor del
+parámetro de penalización por curvatura $\lambda$.
+
+```{r warning=FALSE,message=FALSE,echo=FALSE}
+descriptive_1
+fig_1_cap <- fig_nums(name = "fig_1", 
+                        caption = "Gráfico de las realizaciones correspondientes al proceso de absorbancia.")
+fig_2_cap <- fig_nums(name = "fig_2", 
+                        caption = "Gráfico de las realizaciones correspondientes al proceso de absorbancia, según su contenido de grasa (grupo alto y grupo bajo).")
+fig_3_cap <- fig_nums(name = "fig_3", 
+                        caption = "Boxplot funcional para el grupo de curvas bajo en grasa.")
+fig_4_cap <- fig_nums(name = "fig_4", 
+                        caption = "Boxplot funcional para el grupo de curvas alto en grasa.")
+fig_5_cap <- fig_nums(name = "fig_5", 
+                        caption = "Curvas correspondientes al grupo alto en grasa, junto con la curva media y la media global de todas las observaciones en azul.")
+```
+\begin{center}
+`r fig_1_cap`
+\end{center}
+
+```{r warning=FALSE,message=FALSE,echo=FALSE}
+descriptive_2
+```
+\begin{center}
+`r fig_2_cap`
+\end{center}
+
+
+
+
+\begin{center}
+`r fig_5_cap`
+\end{center}
+
+
+Para determinar el valor de $\lambda$ se construyó una función que utiliza una grilla de valores y a partir de cada uno de ellos se calcula el coeficiente de validación cruzada generalizada y se selecciona el $\lambda$ que minimiza dicho criterio, como se muestra en los siguientes comandos.
+
+```{r warning=FALSE,message=FALSE}
+df_gcv <- map_dfr(seq(-5,5,by=0.01),~Select_lambda(x= 1:100 , Y_mat= base::t(absorp), lambda=.x))
+lambda_optimo <- df_gcv[which.min(df_gcv$gcv),"lambda"]
+```
+
+
+Una vez se suavizan las curvas, se procede a validar los supuestos que son requeridos para llevar a cabo las pruebas de hipótesis de manera óptima. Para esto, se tienen en cuenta tres aspectos, que son:
+\begin{enumerate}
+\item Exclusión de curvas atipicas,
+\item Independencia entre las curvas y
+\item Verificación de la existencia de puntos de cambio.
+\end{enumerate}
+
+
+
+```{r echo=FALSE, warning=FALSE,message=FALSE}
+Matrix_bajos <- base::t(absorp[as.matrix(endpoints[str_detect(Grupo,"Bajo"),"Llave"]),])
+Matrix_altos <- base::t(absorp[as.matrix(endpoints[str_detect(Grupo,"Alto"),"Llave"]),])
+Bajos_fitted <- smooth_fda(x = 1:100, Y_mat = Matrix_bajos, lambda = lambda_optimo)
+Altos_fitted <- smooth_fda(x = 1:100, Y_mat = Matrix_altos, lambda = lambda_optimo)
+```
+
+```{r echo=FALSE, warning=FALSE,message=FALSE}
+fD_bajo <- fData( 1:100, base::t(Bajos_fitted))
+boxplot_bajo <- fbplot(fD_bajo)
+```
+\begin{center}
+`r fig_3_cap`
+\end{center}
+
+
+```{r echo=FALSE, warning=FALSE,message=FALSE}
+fD_alto <- fData( 1:100, base::t(Altos_fitted))
+boxplot_alto <- fbplot(fD_alto)
+
+Matrix_alto_without <- Matrix_altos[,- boxplot_alto$ID_outliers]
+Matrix_bajo_without <- Matrix_bajos[,- boxplot_bajo$ID_outliers]
+```
+\begin{center}
+`r fig_3_cap`
+\end{center}
+
+
+
+
+
+Para el primer caso, se elaboraron gráficos boxplot para cada grupo, los cuales se muestran en los gráficos 3 y 4. Las curvas de colores diferentes al azul representan curvas atipicas, por lo cual son excluidas para análisis posteriores.
+
+
+En los procedimientos que se describen a continuación, cuando se requiere el cálculo de la norma $\langle\cdot , \cdot\rangle$ correspondiente a funciones en el espacio $\mathcal{L}^2$
+se utilizó la función $inprod$ del paquete $fda$. Por otro lado, para verificar el supuesto de independencia, se desea probar
+
+\begin{center}
+$H_0:$ Las observaciones son independientes vs \\
+$H_a:$ Las observaciones no son independientes,
+\end{center}
+
+para lo que se realiza el cálculo de la estadística de prueba que se muestra en la ecuación \eqref{eq4}, donde $\hat{C}_h$ es la matriz de covarianzas entre scores con un rezago h, mientras que $\hat{C}_0$ es la matriz de varianzas y covarianzas entre scores, que es igual a la matriz diagonal con los valores propios del operador de covarianza. De manera adicional, a partir de ejercicios previos, se observó que es suficiente trabajar con una función propia, ya que ésta captura un gran porcentaje de variabilidad.
+
+\begin{equation}\label{eq4}
+Q = \sum_{k=1}^{N-1} tr [\hat{C}_h ' \hat{C}_0^{-1} \hat{C}_h \hat{C}_0^{-1}].
+\end{equation}
+
+```{r warning=FALSE,message=FALSE}
+Test_altos <- Independence_Q(x = 1:100, Y_mat = Matrix_alto_without,
+lambda = lambda_optimo, n_pca = 1)
+Test_altos
+```
+
+```{r warning=FALSE,message=FALSE}
+Test_bajos <- Independence_Q(x = 1:100, Y_mat = Matrix_bajo_without,
+lambda = lambda_optimo, n_pca = 1)
+Test_bajos
+```
+
+Para la determinación del valor $p$ asociado a cada prueba, se hace uso de la distribución $\chi^2$ con $pH$ grados de libertad, donde $H$ es el número de curvas menos 1. De esta manera, los valores p son 1 y 1 para el grupo de altos y bajos, respectivamente. De esta manera, se observa que no se rechaza la hipótesis de independencia
+en ambos casos.
+
+Por último, para verificar la existencia de puntos de cambio en las observaciones funcionales, se desea probar
+
+\begin{center}
+$H0 : E[X_k] = E[X_m] \enspace \forall k,m = 1, . . . ,N$ vs \\
+$Ha :$ Por lo menos $E[X_k] \neq E[X_m]$ para $k,m = 1, . . . ,N$,
+\end{center}
+
+\noindent para lo que se usa la estadística de prueba que se muestra en la ecuación (2), donde $\langle X_i (t), \eta_l (t) \rangle$ y $\lambda_l$ es el $l$-ésimo valor propio asociado al operador de covarianza en cuestión. Para la determinación de valores $p$ en esta prueba se uso métodos de remuestreo y permutaciones entre las agrupaciones conformadas, ya que bajo hipótesis nula, se supone que deberían ser en promedio iguales.
+
+
+\begin{equation}
+\frac{1}{N} \sum_{l=1}^d \frac{\sum_{i=1}^K \hat{\epsilon}_{li}-\frac{K}{N}\sum_{j=1}^N \hat{\epsilon}_{lj}}{\lambda_l}
+\end{equation}
+
+
+Se realizó la programación tanto de la estadística de prueba como el método de remuestreo asociado, de tal manera que la función indica el número donde los grupos de funciones no son iguales, en caso de que se rechace la hipótesis nula. Las salidas que se muestran a continuación presentan los valores que se utilizaron para segmentar los dos grupos denotados por $K$ y los respectivos valores $p$.
+
+```{r warning=FALSE,message=FALSE}
+Check_bajos <- Check_differences(x = 1:100, Y_mat = Matrix_bajo_without,
+               n_pca = 1, lambda = lambda_optimo,
+               n_times = 10)
+Check_bajos$K
+Check_bajos$p_values
+
+Check_altos <- Check_differences(x = 1:100, Y_mat = Matrix_alto_without,
+               n_pca = 1, lambda = lambda_optimo,
+               n_times = 10)
+Check_altos$K
+Check_altos$p_values
+```
+
+Se puede observar que los valores $p$ asociados a la prueba de punto de cambio son mayores a 0.05, por lo cual no se rechaza la hipótesis nula en los casos considerados.
+
+   + Formule y verifique la prueba de hipótesis adecuada para la carne con alto contenido de grasa. Verifique los supuestos asociados a la prueba de hipótesis.
+   
+   Suponiendo que se tiene una secuencia de $n$ funciones aleatorias $X_1 (t), \dots, X_n(t)$, con $X_i(t) \in \mathcal{L}^2$ y se desea llevar a cabo la prueba de hipótesis relacionada con una función promedio proveniente de dicho proceso estocástico funcional, inicialmente se tienen dos perspectivas. La primera de ellas se basa en la norma, mientras que la segunda se basa principalmente en los componentes principales funcionales. Partiendo de que se desea probar 
+
+\begin{center}
+$H_0:\mu (t) = \mu_0 (t)$ vs  $H_a:\mu (t) \neq \mu_0 (t)$,
+\end{center}
+
+\noindent donde $\mu (t)$ representa la función promedio poblacional y $\mu_0 (t)$ es una función de interés. Las dos perspectivas mencionadas anteriormente se describen a continuación:
+
+
+* Prueba basada en la norma:
+
+En este caso la estadística de prueba se muestra en la ecuación \eqref{eq1}
+
+\begin{align}\label{eq1}
+T_{NORM} &= n || \bar{X}(t) - \mu (t) ||^2  \\
+&= n \sum_{k=1}^\infty \langle  \bar{X}(t) - \mu (t), \eta_k (t) \rangle \nonumber \\ 
+&\approx  n \sum_{k=1}^q \langle  \bar{X}(t) - \mu (t), \eta_k (t) \rangle, \nonumber
+\end{align}
+
+\noindent donde $\eta_k (t)$ la $k$-ésima función propia del operador de covarianza $\mathcal{C}_X$, que corresponde al conjunto de realizaciones funcionales $X_i (t)$ y $q$ es un número de funciones propias definido de acuerdo a un porcentaje de variabilidad.
+
+* Prueba basada en los componentes principales funcionales:
+
+Esta perspectiva se basa en la estadística $T ^2$ de Hotelling considera la estadística de prueba que se muestra en la ecuación \eqref{eq2} 
+
+\begin{align}\label{eq2}
+T^2_{FPCA} &= n \sum_{k=1}^\infty \frac{\epsilon_k^2}{\lambda_k} \\
+&= n \sum_{k=1}^\infty \frac{\langle \bar{X}(t) - \mu (t), \eta_k (t) \rangle ^2}{\lambda_k} \nonumber \\ 
+& \approx  n \sum_{k=1}^q \frac{\langle \bar{X}(t) - \mu (t), \eta_k (t)\rangle ^2}{\lambda_k}  \nonumber
+\end{align}
+
+Para fines prácticos en este ejercicio se plantea el objetivo de determinar si la función promedio en cada uno
+de los grupos es constante o no. Es decir, que se va a probar
+\begin{center}
+$H_0 : \mu(t) = \mu_0,$ \\
+$H_a : \mu(t) \neq \mu_0$.
+\end{center}
+
+Para desarrollar la prueba se utilizaron las ecuaciones \eqref{eq1} y \eqref{eq2}, mientras que para la determinación de valores críticos se usaron métodos de remuestreo. Para generar las nuevas observaciones producto del método bootstrap, se hizo uso de la metodología descrita por \cite{paparoditis2016bootstrap}. La idea descrita allí se hace para dos poblaciones y se resume en generar observaciones como se describe en la ecuación \eqref{eq5}, donde
+
+$\epsilon_{ij}^+ = X_{ij}(t) - \bar{X}_i.(t)$, con $\bar{X}_{i.} (t) = 1/N \sum_{j=1}^N X_{ij}(t)$. De esta forma, se observa que el remuestreo se realiza sobre los $\epsilon_{ij}^+$
+calculados a partir de la realización original. Esta idea se aplica en el siguiente punto, cuyo
+objetivo es realizar una prueba a partir de dos poblaciones. En esta parte, que corresponde a la media de una población, se hace uso de una idea análoga, es decir que las observaciones funcionales simuladas $X_{i}(t)^+$ se obtuvieron mediante la formula que se encuentra en la ecuación \eqref{eq6}.
+
+\begin{align}\label{eq5}
+X_{ij}(t)^+ = \bar{X}_{N+M} + \epsilon_{ij}^+ \\
+X_{i}(t)^+ = \bar{X}_{N} + \epsilon_{i}^+  \label{eq6}
+\end{align}
+
+A continuación se presentan los valores p correspondientes a las estadísticas de prueba basados en la norma y en los componentes principales funcionales, a partir del método bootstrap para el grupo alto en grasa. Allí se observa que estos valores son mayores a 0.05, por lo cual se concluye que no hay suficiente evidencia para determinar que la media es diferente a una constante. Considerando que esto es cuestionable, se elaboró el Gráfico 5, donde se visualiza la función promedio en color rojo y la media global utilizada en la prueba en color azul. Allí se nota que son bastante similares, lo cual justifica la decisión obtenida en la prueba.
+
+```{r}
+Test_one_mean_fda(x = 1:100, Y_mat = Matrix_alto_without,
+                  lambda = lambda_optimo,
+                  n_pca = 1, mean = mean(Matrix_alto_without), n_times = 10)
+```
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+df_plot <- Matrix_alto_without %>% as.data.frame() %>% mutate(Medicion = 1:100) %>% 
+  pivot_longer(cols = - Medicion, names_to = "Curva" ,values_to = "Valor")
+
+
+df_mean <- eval.fd(evalarg = 1:100,
+                   mean.fd(fitted_fda(x = 1:100, Y_mat = Matrix_alto_without, lambda = lambda_optimo)$fd)) %>% 
+           as.data.frame() %>% mutate( Medicion = 1:100)
+
+ggplot()+geom_line(data=df_plot, aes(x = Medicion, y = Valor, group = Curva))+
+  geom_line(data =  df_mean, aes(x = Medicion, y = mean),color = "red", size =2.5)+
+  geom_hline(yintercept =  mean(Matrix_alto_without), color = "blue", size = 2.5)+
+  theme_bw()
+```
+\begin{center}
+`r fig_5_cap`
+\end{center}
+
+
+   + Verifique si las funciones medias de la carne con alto contenido de grasa y de la carne con bajo nivel de grasa, son iguales. Verifique los supuestos asociados a la prueba de hipótesis.
+   
+En este caso, se tienen dos agrupaciones de curvas, en adelante denotadas por $X_1, \dots ,X_N$ y $Y_1,\dots , Y_M$, respectivamente, con $X_k, Y_i \in \mathcal{L}^2$. Se desea probar:
+
+\begin{center}
+$H_0: \enspace \mu_1 (t) = \mu_2 (t)$ 
+$H_a: \enspace \mu_1 (t) \neq \mu_2 (t)$ 
+\end{center}
+
+Para ello, nuevamente se tienen dos perspectivas. La primera de ellas se basa en la norma, mientras que la segunda se basa en los componentes principales funcionales.
+
+* Prueba basada en la norma:
+
+Se utiliza la estadística de prueba que se muestra en la ecuación \eqref{eq7}, donde $\varphi$ representa un proceso gaussiano, $Z_k$ son variables aleatorias con distribución normal y $\tau_k$ son los valores propios correspondientes al operador de covarianza $\mathcal{C}_\varphi = (1-\theta)\mathcal{C}_X+\theta\mathcal{C}_Y$.
+
+\begin{align}\label{eq7}
+U &= \frac{NM}{N+M} ||\bar{X} (t)- \bar{Y} (t) ||  \\
+\nonumber &= \int \varphi^2 (t)dt \\
+\nonumber &= \sum_{k=1}^\infty \tau_k Z_k^2 \\
+\nonumber &\approx \sum_{k=1}^q \hat{\tau}_k \hat{Z}_k^2.
+\end{align}
+
+* Prueba basada en los componentes principales funcionales:
+
+En esta segunda perspectiva, se utilizaron los valores y funciones propias de $\mathcal{C}_\varphi$. La estadística de prueba se muestra en la ecuación \eqref{eq8}, donde $\lambda_k$ es el $k$-ésimo valor propio de $\mathcal{C}_\varphi$ y $\epsilon_k = \langle \bar{X}-\bar{Y}, \eta_k \rangle$ con $\eta_k$ la $k$-ésima función propia correspondiente.
+
+\begin{equation}\label{eq8}
+U_{FPCA} = \sum_{k=1}^q \frac{\hat{\epsilon}_k^2}{\hat{\lambda}_k}.
+\end{equation}
+
+La determinación de los valores y funciones propias de $\mathcal{C}_\varphi$ se realizó mediante la matriz que se detalla en \citet{horvath2012inference}, la cual se muestra en la ecuación \eqref{eq9}.
+
+\begin{align}\label{eq9}
+\nonumber \hat{z}_{MN} (t,s) &= \frac{N}{N+M}\frac{1}{N}\sum_{i=1}^N (X_i(t)-\bar{X}_N(t))(X_i(s)-\bar{X}_N(s)) \\
+&+ \frac{M}{N+M}\frac{1}{M}\sum_{i=1}^N (X_i(t)-\bar{X}_M(t))(X_i(s)-\bar{X}_M(s)).
+\end{align}
+
+La determinación de valores $p$ se realizó de acuerdo a la metodología dada en \citet{paparoditis2016bootstrap}, que se describió previamente. Los resultados se presenta a continuación, donde se observa que los valores $p$ son menores a 0.05, por lo cual se concluye que hay suficiente evidencia para rechazar la hipótesis de igualdad de funciones promedio poblacionales.
+
+```{r}
+P_value_test_two_mean(x = 1:100, Y_mat_1 = Matrix_alto_without,
+                      Y_mat_2 = Matrix_bajo_without, lambda = lambda_optimo,
+                      n_pca = 1, n_times = 10)
+```
+
+   + Verifique si el operador de covarianza de la carne con alto contenido de grasa es igual al operador de covarianza con bajo nivel de grasa. Verifique los supuestos asociados a la prueba de hipótesis.
+   
+   En este caso, se tienen dos agrupaciones de curvas, en adelante denotadas por $X_1, \dots ,X_N$ y $Y_1,\dots , Y_M$, respectivamente, con $X_k, Y_i \in \mathcal{L}^2$. Se desea probar 
+   
+   \begin{center}
+   $H_0: \enspace C_x = C_y$ \\
+   $H_a: \enspace C_x \neq C_y$,
+   \end{center}
+
+\noindent lo cual se a llevar a cabo mediante la estadística de prueba descrita en la ecuación 
+\eqref{eq10}, que se presenta a continuación:
+
+\begin{equation}\label{eq10}
+\hat{T} = \frac{N+M}{2} \theta (1- \theta) \sum_{i=1}^p \sum_{j=1}^p \frac{\langle \hat{C}_x (\eta_i)-\hat{C}_y (\eta_i) ,\eta_j \rangle ^2}{(\theta\lambda_{yj}+(1-\theta)\lambda_{xi})(\theta\lambda_{xj}+(1-\theta)\lambda_{yi})},
+\end{equation}
+
+\noindent donde 
+
+\begin{equation}
+\hat{\lambda}_{xk} = \frac{1}{N} \sum_{n=1}^N \langle X_n, \hat{\eta}_k \rangle^2 \text{  y  } \hat{\lambda}_{yk} = \frac{1}{M} \sum_{m=1}^M \langle Y_m, \hat{\eta}_k \rangle^2.
+\end{equation}
+
+Mientras que por otro lado, 
+
+\begin{equation}
+\hat{C}_x (\eta_i) = \frac{1}{N} \sum_{k=1}^N \langle X_k(t),\eta(t) \rangle X_k(t) \text{  y  }
+\hat{C}_y (\eta_i) = \frac{1}{M} \sum_{k=1}^M \langle Y_k(t),\eta(t) \rangle Y_k(t).
+\end{equation}
+
+
+La determinación del valor $p$ en este caso, se realiza a partir de la distribución $\chi^2$ con $\frac{p(p+1)}{2}$ grados de libertad. Se observa que el valor $p$, utilizando la distribución $\chi^2$, es mayor a 0.05, por lo cual los operadores son estadísticamente diferentes. Por otra parte, mediante el método bootstrap el valor $p$ es menor a 0, por lo cual en ese caso se rechaza la hipótesis de igualdad entre operadores de covarianza. Los resultados mencionados se presentan a continuación:
+
+```{r echo=FALSE, warning=FALSE,message=FALSE}
+Y_mat_1 =  Matrix_bajo_without
+Y_mat_2 =  Matrix_alto_without
+n_pca = 1
+lambda = lambda_optimo
+n_times <- 10
+
+
+Y_mat <- cbind(Y_mat_1,Y_mat_2)
+pca_overall <- pca.fd(fitted_fda(x = 1:100, Y_mat = Y_mat, lambda = lambda_optimo)$fd,
+                      nharm = n_pca)
+
+Cov_operators_test_stat <- function(x , Y_mat_1, Y_mat_2, pca_overall, lambda){
+N <- ncol(Y_mat_1)
+M <- ncol(Y_mat_2)
+theta <- N/(N+M)
+fitted_1 <- eval.fd(evalarg= x,
+                    fitted_fda(x = x, Y_mat = Y_mat_1, lambda = lambda)$fd)
+fitted_2 <- eval.fd(evalarg= x,
+                    fitted_fda(x = x, Y_mat = Y_mat_2, lambda = lambda)$fd)
+epsilon_x <- inprod(fitted_fda(x = x, Y_mat = Y_mat_1, lambda = lambda)$fd,
+pca_overall$harmonics)
+
+epsilon_y <- inprod(fitted_fda(x = x, Y_mat = Y_mat_2, lambda = lambda)$fd,
+       pca_overall$harmonics)
+lambda_x <- 1/N * map_dbl(1:1,~sum(epsilon_x[,.x]^2))
+lambda_y <- 1/M * map_dbl(1:1,~sum(epsilon_y[,.x]^2))
+
+
+C_x <- map_dfc(1:nrow(epsilon_x),function(.x){
+epsilon_x[.x,1] * fitted_1[,.x]
+}) %>% as.matrix() %>% rowMeans()
+
+C_y <- map_dfc(1:nrow(epsilon_y),function(.x){
+  epsilon_y[.x,1] * fitted_2[,.x]
+}) %>% as.matrix() %>% rowMeans()
+
+
+Numerator <- inprod(fitted_fda(x = x, Y_mat = C_x - C_y, lambda = lambda)$fd , pca_overall$harmonics)^2
+T <- (N+M)/2 * theta * (1-theta) * (Numerator)/((theta * lambda_y + (1-theta)*lambda_x)*(theta * lambda_x + (1-theta)*lambda_y))
+return(T)
+}
+
+Mean_2 <- eval.fd(evalarg = x,
+                  mean.fd(fitted_fda(x = x, Y_mat = Y_mat_2, lambda = lambda)$fd))
+Mean_1 <- eval.fd(evalarg = x,
+                  mean.fd(fitted_fda(x = x, Y_mat = Y_mat_1, lambda = lambda)$fd))
+Res_1 <- eval.fd(evalarg = x,
+                 fitted_fda(x = x, Y_mat = Y_mat_1, lambda = lambda)$fd) -
+  (Mean_1 %*% matrix(1,nrow = 1, ncol =N))
+
+Res_2 <- eval.fd(evalarg = x,
+                 fitted_fda(x = x, Y_mat = Y_mat_2, lambda = lambda)$fd) -
+  (Mean_2 %*% matrix(1,nrow = 1, ncol =M))
+
+
+Results_boots <- map_dfr(1:n_times,function(n){
+  Simulated_matrix <- map_dfc(1:(N+M),function(m){
+    if(runif(1) > N/(N+M)){
+      epsilon_star <- Mean_2 + Res_2[,sample(1:M,size=1)]
+    }else{
+      epsilon_star <- Mean_1 + Res_1[,sample(1:N,size=1)]
+    }
+    return(epsilon_star)
+  })
+
+
+  Mean_2_sim <- eval.fd(evalarg = x,
+                        mean.fd(fitted_fda(x = x, Y_mat = as.matrix(Simulated_matrix[,(N+1):(N+M)]),
+                                           lambda = lambda)$fd))
+  Mean_1_sim <- eval.fd(evalarg = x,
+                        mean.fd(fitted_fda(x = x, Y_mat = as.matrix(Simulated_matrix[,1:N]),
+                                           lambda = lambda)$fd))
+
+  Test_stat_boots <- Cov_operators_test_stat(x = 1:100 , Y_mat_1 = as.matrix(Simulated_matrix[,1:N]),
+                          Y_mat_2 = as.matrix(Simulated_matrix[,(N+1):(N+M)]),
+                          pca_overall = pca_overall,
+                          lambda = lambda_optimo)
+
+
+  return(data.frame(Test_stat_boots = Test_stat_boots))
+})
+```
+
+<!-- ```{r warning=FALSE, message= FALSE} -->
+<!-- Test_original <- Cov_operators_test_stat(x = 1:100 , Y_mat_1 = Matrix_bajo_without, -->
+<!--                                          Y_mat_2 = Matrix_alto_without, -->
+<!--                                          pca_overall = pca_overall, -->
+<!--                                          lambda = lambda_optimo) -->
+
+<!-- p_value <- pchisq(Test_original, n_pca*(n_pca+1)/2, lower.tail = FALSE) -->
+<!-- p_value -->
+
+<!-- mean(Results_boots$Test_stat_boots > as.double(Test_original)) -->
+<!-- ``` -->
+
+
+Se incluyen en los procedimientos de prueba las propuestas vistas en clase y las presentadas en los papers \citet{paparoditis2016bootstrap} y \citet{lopez2021depth}.
+
+
+(2) Utilice el dataset sobre las curvas espectrométricas de la producción de azúcar a partir de la remolacha y aplique la propuesta presentada por \citet{qiu2021two}.
+
+
+
+
+
+
+
+
+
+
