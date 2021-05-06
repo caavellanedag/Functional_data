@@ -28,23 +28,13 @@ bibliography: references.bib
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-
-(1) Resuelva el ejercicio 4.2 del libro de \citet{kokoszka2017introduction}.
-(2) Usando el dataset TECATOR:
-
-* Formule un modelo de regresión entre la cantidad de grasa (variable de respuesta) y las curvas espectrométricas (variable regresora) que caracterizan las muestras de carne dadas.
-
-* Encuentre y analice las estimaciones del parámetro Beta usando las tres propuestas presentadas en el libro de \citet{kokoszka2017introduction}.
-* Encuentre e interprete el coeficiente de determinación.
-* Formule un modelo de regresión adicionando la información suministrada por la primera derivada de las curvas espectrométricas. Encuentre las estimaciones de los parámetros y el coeciente de determinación. Compare estos resultados con los resutlados anteriores.
-
 ```{r echo=FALSE, message=FALSE, warning= FALSE}
 require(pacman)
 p_load(tidyverse,openxlsx,here,haven,data.table,fda,fda.usc,roahd,fdaoutlier,caret)
-p_load(maptools,sgeostat,scatterplot3d,car,fields,gstat,geoR)
+p_load(maptools,sgeostat,scatterplot3d,car,fields,gstat,geoR,knitr,refund, kableExtra)
 
 options(scipen=999)
-source("Z:/Universidad Nacional/PhD/Functional_data/Taller 3/src/Funciones.R")
+source("Z:/Universidad Nacional/PhD/Functional_data/Taller 4/src/Funciones.R")
 
 f.ref <- function(x){
   stringr::str_extract(table_nums(x), "[^:]*")
@@ -54,7 +44,330 @@ f.ref2 <- function(x){
   stringr::str_extract(fig_nums(x), "[^:]*")
 }
 fig_nums <- captioner::captioner(prefix = "Gráfico")
+table_nums <- captioner::captioner(prefix = "Tabla")
+
+tab_1_cap <- table_nums(name = "tab_1", 
+                        caption = "Cuadrados medio del error de acuerdo a la metodología de estimación de la función de regresión.")
+
+tab_2_cap <- table_nums(name = "tab_2", 
+                        caption = "Sumas de cuadrado y coeficientes de determinación de acuerdo a la metodología de estimación de la función de regresión.")
+
+tab_3_cap <- table_nums(name = "tab_3", 
+                        caption = "Cuadrados medio del error de acuerdo a la metodología de estimación de la función de regresión en el caso en que se adiciona una variable funcional correspondiente a la derivada de las funciones iniciales.")
+
+tab_4_cap <- table_nums(name = "tab_4", 
+                        caption = "Sumas de cuadrado y coeficientes de determinación de acuerdo a la metodología de estimación de la función de regresión en el caso en que se adiciona una variable funcional correspondiente a la derivada de las funciones iniciales.")
+
+fig_1_cap <- fig_nums(name = "fig_1", 
+                        caption = "Funciones de regresión estimadas de acuerdo a las diferentes metodologías de estimación.")
+fig_2_cap <- fig_nums(name = "fig_2", 
+                        caption = "Funciones de regresión estimadas de acuerdo a las diferentes metodologías de estimación en un rango reducido de valores en el eje de las abcisas.")
+fig_3_cap <- fig_nums(name = "fig_3", 
+                        caption = "Valores observados de la variable respuesta junto con sus respectivas estimaciones de acuerdo a las diferentes metodologías de estimación.")
+fig_4_cap <- fig_nums(name = "fig_4", 
+                        caption = "Funciones de regresión estimadas de acuerdo a las diferentes metodologías de estimación en el caso en que se adiciona una variable funcional correspondiente a la derivada de las funciones iniciales.")
+fig_5_cap <- fig_nums(name = "fig_5", 
+                        caption = "Funciones de regresión estimadas de acuerdo a las diferentes metodologías de estimación en un rango reducido de valores en el eje de las abcisas en el caso en que se adiciona una variable funcional correspondiente a la derivada de las funciones iniciales.")
+
+fig_6_cap <- fig_nums(name = "fig_6", 
+                        caption = "Valores observados de la variable respuesta junto con sus respectivas estimaciones de acuerdo a las diferentes metodologías de estimación en el caso en que se adiciona una variable funcional correspondiente a la derivada de las funciones iniciales.")
 ```
+
+
+(1) Resuelva el ejercicio 4.2 del libro de \citet{kokoszka2017introduction}.
+(2) Usando el dataset TECATOR:
+
+* Formule un modelo de regresión entre la cantidad de grasa (variable de respuesta) y las curvas espectrométricas (variable regresora) que caracterizan las muestras de carne dadas.
+
+* Encuentre y analice las estimaciones del parámetro Beta usando las tres propuestas presentadas en el libro de \citet{kokoszka2017introduction}.
+
+Con el objetivo de complementar los resultados, se describen de manera breve las tres metodologías propuestas en \citet{kokoszka2017introduction} para el caso donde se tienen variables funcionales como regresoras y escalares en la respuesta. Estas se presentan a continuación. De esta manera, la ecuación de regresión que relaciona una variable funcional y una variable de tipo escalar se muestra en la ecuación \eqref{eq_reg}. 
+
+\begin{equation}\label{eq_reg}
+Y_i = \alpha + \int \beta(t)X(t)dt + \epsilon_i
+\end{equation}
+
+   + Estimación a partir de funciones base
+   
+   En esta parte lo que se realiza es reescribir el término $\beta(t)$, como se muestra en la ecuación  \eqref{eq_reg_basis_1}, donde $B_k$ corresponde a una función base. 
+   
+   \begin{equation}\label{eq_reg_basis_1}
+ \beta(t) = \sum_{k=1}^K c_k B_k (t)
+\end{equation}
+
+De esta forma, reemplazando la ecuación \eqref{eq_reg_basis_1} en la ecuación \eqref{eq_reg}, se tiene lo que se muestra en la ecuación \eqref{eq_reg_basis_2}, en donde se observa que a partir de reescribiendo todo en términos de funciones base, el problema se reduce a la estimación de los parámetros de un modelo de regresión múltiple de la manera usual.
+
+\begin{align}\label{eq_reg_basis_2}
+\int \beta (t) X_i (t) dt = \sum_{k=1}^K c_k \int B_k(t)X_i(t)dt =: \sum_{k=1}^K x_{ik}c_k 
+\end{align}
+
+
+   
+   + **Estimación a partir de penalizaciones por rugosidad:**
+   
+   La idea principal de esta propuesta es considerar un parámetro de penalización por curvaturas. La función a optimizar en este planteamiento se muestra en la ecuación \eqref{eq_penalty_1}. La estimación de $\int \beta(t)X(t)dt$ se realiza de manera análoga a la metodología presentada en la metodología de estimación sin penalización, mientras que la estimación  de $\lambda$ se realiza mediante validación cruzada generalizada. 
+   
+   \begin{equation}\label{eq_penalty_1}
+P_\lambda (\alpha, \beta) = \sum_{i=1}^N \left[ Y_i - \alpha - \int \beta (t)X_i (t)df \right]^2 + \lambda \int [(L\beta)(t)]^2dt
+\end{equation}
+
+
+   
+   + **Regresión a partir de los componentes principales funcionales:** 
+
+donde $\hat{\xi}_{ij} = \int \left[ X_i(t)-\hat{\mu}(t) \right]\hat{v}_j (t)$
+
+\begin{equation}\label{eq_fpca1}
+X(t) \approx \mu(t)+\sum_{j=1}^p \hat{\xi}_{ij} \hat{v}_j (t)
+\end{equation}
+
+\begin{align}\label{eq_fpca2} \nonumber
+Y_i &= \alpha + \int \beta (t) \left( mu(t)+\sum_{j=1}^p \hat{\xi}_{ij} \hat{v}_j (t) \right)dt + \epsilon_i \\
+&= \beta_0 + \sum_{j=1}^p \hat{\xi}_{ij} \beta_j+\epsilon_i.
+\end{align}
+
+Se observa en la ecuación \eqref{eq_fpca2} que los parámetros a estimar son los $\xi_{ij}$ a partir de los métodos de regresión tradicionales. 
+
+En \citet{kokoszka2017introduction} se presenta una breve descripción de cómo implementar estas metodologías a partir de la librería $refund$ \citep{refund} y en este documento se realizan pasos similares, únicamente que se aplican a el dataset de tecator \citep{fda.usc}. De esta forma, la variable respuesta $Y_i$ es la cantidad de grasa, mientras que las curvas espectrométricas son las funciones aleatorias explicativas en este caso. 
+
+La estimación del modelo mediante los componentes principales funcionales, modelo sin penalización y el que considera la penalización por rugosidad se presentan a continuación. En el segundo, el argumento $fx=TRUE$ significa que no se penaliza. En los casos 2 y 3 el número de funciones base se obtuvo mediante la función $k.check$ del paquete $mgcv$ \citep{mgcv}. 
+
+
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+data(tecator)
+endpoints<-endpoints %>% as.data.table()
+endpoints[,c("Grupo","Llave"):= list(ifelse(V2>20,"Alto (Grasa>20)","Bajo (Grasa<=20)"),1:nrow(endpoints))]
+
+k_optimo <- map_dbl(1:nrow(absorp),function(y){
+  x <- 1:100
+  k<-k.check(gam(absorp[y,]~s(x)))
+  return(k[1,1])
+}) %>% mean() %>% round()
+Y <- endpoints$V2
+```
+
+```{r warning=FALSE, message=FALSE}
+fit.fpcr = pfr(Y ~ fpc(absorp,k=50))
+fit.lin = pfr(Y ~ lf(absorp, bs = "ps", k = k_optimo, fx = TRUE))
+fit.pfr = pfr(Y ~ lf(absorp, bs = "ps", k = k_optimo))
+```
+
+```{r echo=FALSE,warning=FALSE, message=FALSE}
+grid <- 1:100
+coefs = data.frame(grid = grid,
+                   FPCR = coef(fit.fpcr)$value,
+                   Basis = coef(fit.lin)$value,
+                   Penalized = coef(fit.pfr)$value)
+coefs.m = melt(coefs, id = "grid")
+colnames(coefs.m) = c("grid", "Method", "Value")
+plot_1 <- ggplot(coefs.m, aes(x = grid, y = Value, color = Method, group
+                    = Method),width=12,height=6) + 
+          geom_path(size=1) + theme_bw()+xlab("t")
+plot_2 <- ggplot(coefs.m, aes(x = grid, y = Value, color = Method, group
+                    = Method),width=12,height=6) +
+           geom_path(size=1) + theme_bw()+
+                    ylim(-2*10^3,2*10^3)+xlab("t")
+
+x_axis <- 1:215
+FPCR_predict <- predict(fit.fpcr)
+Basis_predict <- predict(fit.lin)
+Penalized_predict <- predict(fit.pfr)
+True_values <- Y
+
+df_to_plot <- data.frame(x_axis, FPCR_predict, Basis_predict, Penalized_predict, True_values)
+
+plot_3 <- df_to_plot %>%
+  data.table::melt(variable.name="Tipo",value.name="Estimado",id.vars=c("x_axis","True_values")) %>% 
+  ggplot()+geom_point(aes(x_axis,True_values),color="red")+
+  geom_point(aes(x_axis,Estimado),color="blue")+
+  facet_wrap(~Tipo)+xlab("Curva")
+
+
+
+Table_MSE <- df_to_plot %>%
+  data.table::melt(variable.name="Tipo",value.name="Estimado",id.vars=c("x_axis","True_values")) %>% 
+  mutate(Squared_dif = (True_values-Estimado)^2) %>% group_by(Tipo) %>%
+  summarize(MSE = mean(Squared_dif)) %>% ungroup()
+  
+
+Table_R_squared <- df_to_plot %>%
+  data.table::melt(variable.name="Tipo",value.name="Estimado",id.vars=c("x_axis","True_values")) %>% 
+  mutate(Squared_dif = (True_values-Estimado)^2) %>% group_by(Tipo) %>%
+  summarize(SSE = sum(Squared_dif)) %>% ungroup() %>% 
+  mutate(SST = sum((Y-mean(Y))^2)) %>% mutate(R2 = 1-SSE/SST)
+
+
+
+
+
+df_gcv <- map_dfr(seq(-5,5,by=0.01),~Select_lambda(x= 1:100 , Y_mat= base::t(absorp), lambda=.x)) 
+lambda_optimo <- df_gcv[which.min(df_gcv$gcv),"lambda"]
+
+absorp_fda <- fitted_fda(x = 1:100, Y_mat = t(absorp), lambda = lambda_optimo )  
+
+deriv_fda <- deriv.fd(absorp_fda$fd)
+deriv_matrix <- t(eval.fd(evalarg = 1:100, deriv_fda))
+
+
+
+fit.fpcr_2 = pfr(Y ~ fpc(absorp,k=50) + fpc(deriv_matrix,k=50))
+# without a penalty, use k= 3 for the first beta, and 15 for the second
+# one can verify the efficacy of these choices by
+# looking at the aic
+fit.lin_2 = pfr(Y ~ lf(absorp, bs = "bs", k = k_optimo, fx = TRUE) +
+                lf(deriv_matrix, bs = "bs", k = k_optimo, fx = TRUE))
+# "ps" stands for "penalized splines", fx= TRUE means no penalty is used
+fit.pfr_2 = pfr(Y ~ lf(absorp, bs = "bs", k = k_optimo) + 
+                lf(deriv_matrix, bs = "bs", k = k_optimo))
+# if sp is not specified, data driven smoothing is used
+
+
+
+coefs = data.frame(grid = grid,
+                   FPCR = coef(fit.fpcr_2)$value,
+                   Basis = coef(fit.lin_2)$value,
+                   Penalized = coef(fit.pfr_2)$value)
+coefs.m = melt(coefs, id = "grid")
+colnames(coefs.m) = c("grid", "Method", "Value")
+
+
+plot_4 <- ggplot(coefs.m, aes(x = grid, y = Value, color = Method, group
+                              = Method),width=12,height=6) + geom_path(size=1) + 
+   theme_bw()+xlab("t")
+plot_5 <- ggplot(coefs.m, aes(x = grid, y = Value, color = Method, group
+                              = Method),width=12,height=6) + geom_path(size=1) + 
+  ylim(-2*10^3,2*10^3)+theme_bw()+xlab("t")
+
+
+x_axis <- 1:215
+FPCR_predict <- predict(fit.fpcr_2)
+Basis_predict <- predict(fit.lin_2)
+Penalized_predict <- predict(fit.pfr_2)
+
+
+df_to_plot <- data.frame(x_axis, FPCR_predict, Basis_predict, Penalized_predict, True_values)
+
+plot_6 <- df_to_plot %>%
+  data.table::melt(variable.name="Tipo",value.name="Estimado",id.vars=c("x_axis","True_values")) %>% 
+  ggplot()+geom_point(aes(x_axis,True_values),color="red")+
+  geom_point(aes(x_axis,Estimado),color="blue")+
+  facet_wrap(~Tipo)+xlab("Curva")+theme_bw()
+
+
+Table_MSE_2 <- df_to_plot %>%
+  data.table::melt(variable.name="Tipo",value.name="Estimado",id.vars=c("x_axis","True_values")) %>% 
+  mutate(Squared_dif = (True_values-Estimado)^2) %>% group_by(Tipo) %>%
+  summarize(MSE = mean(Squared_dif)) %>% ungroup()
+
+
+Table_R_squared_2 <- df_to_plot %>%
+  data.table::melt(variable.name="Tipo",value.name="Estimado",id.vars=c("x_axis","True_values")) %>% 
+  mutate(Squared_dif = (True_values-Estimado)^2) %>% group_by(Tipo) %>%
+  summarize(SSE = sum(Squared_dif)) %>% ungroup() %>% 
+  mutate(SST = sum((Y-mean(Y))^2)) %>% mutate(R2 = 1-SSE/SST)
+```
+
+Para resumir el comportamiento de las estimaciones de $\beta(t)$, el `r f.ref2("fig_1")` muestra a $\hat{\beta}(t)$, de acuerdo a los diferentes métodos de estimación descritos. Por otro lado, `r f.ref2("fig_2")` muestra lo mismo en un rango más reducido de valores en el eje de las abcisas, ya que en la primer figura se observa como uno de los casos toma valores elevados, lo cual hace parecer que la regresión por componentes principales arroja una función casi constante como resultado, mientras que en la segunda figura se observa cómo la función oscila, solo que menos que los otros métodos de estimación, tanto el que penaliza como el que no lo hace. Una manera de realizar la interpretación de la estimación de los $\beta(t)$ es similar a diferentes ponderaciones asignadas a cada $X(t)$. Por ende, como la estimación realizada sin penalización obtiene valores mayores en valores absoluto en los extremos del intervalo, esto quiere decir que en ese caso se asigna una mayor importancia a los valores de $X(t)$  con $t$ cercanos a 0 o a 100. Como en el caso de FPCA se observa una función que no oscila en la misma proporción que las otras, se podría pensar en que las ponderaciones son más homogéneas. 
+
+```{r echo=FALSE,warning=FALSE, message=FALSE}
+plot_1
+```
+\begin{center}
+`r fig_1_cap`
+\end{center}
+
+```{r echo=FALSE,warning=FALSE, message=FALSE}
+plot_2
+```
+\begin{center}
+`r fig_2_cap`
+\end{center}
+
+El `r f.ref2("fig_3")` muestra las estimaciones y los valores observados de $Y_i$ de acuerdo a los diferentes métodos. Allí se observa que el caso que utiliza los FPCA arroja residuales mayores que los otros. Para corroborar lo que se establece anteriormente, se calculan los cuadrados medios del error ($CME$) para cada caso. La `r f.ref("tab_1")` muestra los CME, en donde se observa que cuando se utiliza los FPCA es el de peor rendimiento, mientras que el que menor $CME$ tiene es el método que no penaliza por rugosidad. 
+
+```{r echo=FALSE,warning=FALSE, message=FALSE}
+plot_3
+```
+\begin{center}
+`r fig_3_cap`
+\end{center}
+
+
+\vspace{12pt}
+`r tab_1_cap`
+```{r echo=FALSE,warning=FALSE, message=FALSE}
+kable(Table_MSE) %>% kable_styling(position = "center")
+```
+
+
+
+* Encuentre e interprete el coeficiente de determinación.
+
+
+
+Para complementar esta revisión, la `r f.ref("tab_2")` muestra los valores de $R^2$ calculados para cada caso. La formula utilizada para el cálculo de los $R^2$ se muestra en la ecuación \eqref{eq_r2}, donde $SSE$ es la suma de cuadrados del error y $SST$ es la suma de cuadrados totales. Los resultados y conclusiones en comparación de los tres métodos son los mismos que se obtuvieron con los $CME$. La interpretación de los $R^2$ es análoga al de los modelos de regresión usuales, donde dichos valores representan los porcentajes de variación de la variable respuesta explicados por la regresión.
+
+
+
+
+
+\begin{equation}\label{eq_r2}
+R^2 = 1 - \frac{SSE}{SST}
+\end{equation}
+
+
+
+* Formule un modelo de regresión adicionando la información suministrada por la primera derivada de las curvas espectrométricas. Encuentre las estimaciones de los parámetros y el coeciente de determinación. Compare estos resultados con los resutlados anteriores.
+
+\vspace{12pt}
+`r tab_2_cap`
+```{r echo=FALSE,warning=FALSE, message=FALSE}
+kable(Table_R_squared) %>% kable_styling(position = "center")
+```
+\vspace{12pt}
+
+
+
+Se repitió el mismo procedimiento, de manera análoga al caso que se describió previamente, solamente que en este punto se incluyó una variable funcional adicional como explicativa dentro de la formula. El `r f.ref2("fig_6")` muestra las estimaciones obtenidas por este nuevo modelo a junto con los respectivos valores observados de acuerdo a los tres métodos de estimación. Nuevamente se observa que el modelo que peor rendimiento tiene en términos de proximidad entre estimaciones y valores observados es el que utiliza los FPCA, lo cual también se observa en las tablas 3 y 4, donde se tienen los $CME$ y los coeficientes de determinación. Sin embargo, la mejora en la metodología de FPCA incluyendo la derivada es notoria. 
+
+
+
+<!-- ```{r echo=FALSE,warning=FALSE, message=FALSE} -->
+<!-- plot_4 -->
+<!-- ``` -->
+<!-- \begin{center} -->
+<!-- `r fig_4_cap` -->
+<!-- \end{center} -->
+
+\begin{center}
+`r tab_3_cap`
+\end{center}
+```{r echo=FALSE,warning=FALSE, message=FALSE}
+kable(Table_MSE_2) %>% kable_styling(position = "center")
+```
+
+
+
+
+
+```{r echo=FALSE,warning=FALSE, message=FALSE}
+plot_6
+```
+\begin{center}
+`r fig_6_cap`
+\end{center}
+
+
+
+\begin{center}
+`r tab_4_cap`
+\end{center}
+```{r echo=FALSE,warning=FALSE, message=FALSE}
+kable(Table_R_squared_2) %>% kable_styling(position = "center")
+```
+
+
 
 
 
