@@ -46,28 +46,18 @@ f.ref2 <- function(x){
 fig_nums <- captioner::captioner(prefix = "Gráfico")
 table_nums <- captioner::captioner(prefix = "Tabla")
 
-tab_1_cap <- table_nums(name = "tab_1", 
-                        caption = "Cuadrados medio del error de acuerdo a la metodología de estimación de la función de regresión.")
-
-tab_2_cap <- table_nums(name = "tab_2", 
-                        caption = "Sumas de cuadrado y coeficientes de determinación de acuerdo a la metodología de estimación de la función de regresión.")
-
-tab_3_cap <- table_nums(name = "tab_3", 
-                        caption = "Cuadrados medio del error de acuerdo a la metodología de estimación de la función de regresión en el caso en que se adiciona una variable funcional correspondiente a la derivada de las funciones iniciales.")
-
-tab_4_cap <- table_nums(name = "tab_4", 
-                        caption = "Sumas de cuadrado y coeficientes de determinación de acuerdo a la metodología de estimación de la función de regresión en el caso en que se adiciona una variable funcional correspondiente a la derivada de las funciones iniciales.")
 
 fig_1_cap <- fig_nums(name = "fig_1", 
                         caption = "Funciones de regresión estimadas de acuerdo a las diferentes metodologías de estimación.")
+
 fig_2_cap <- fig_nums(name = "fig_2", 
-                        caption = "Funciones de regresión estimadas de acuerdo a las diferentes metodologías de estimación en un rango reducido de valores en el eje de las abcisas.")
+                        caption = "Funciones de regresión estimadas de acuerdo a las diferentes metodologías de estimación en un rango reducido de valores en el eje de las ordenadas.")
 fig_3_cap <- fig_nums(name = "fig_3", 
                         caption = "Valores observados de la variable respuesta junto con sus respectivas estimaciones de acuerdo a las diferentes metodologías de estimación.")
 fig_4_cap <- fig_nums(name = "fig_4", 
                         caption = "Funciones de regresión estimadas de acuerdo a las diferentes metodologías de estimación en el caso en que se adiciona una variable funcional correspondiente a la derivada de las funciones iniciales.")
 fig_5_cap <- fig_nums(name = "fig_5", 
-                        caption = "Funciones de regresión estimadas de acuerdo a las diferentes metodologías de estimación en un rango reducido de valores en el eje de las abcisas en el caso en que se adiciona una variable funcional correspondiente a la derivada de las funciones iniciales.")
+                        caption = "Funciones de regresión estimadas de acuerdo a las diferentes metodologías de estimación en un rango reducido de valores en el eje de las ordenadas en el caso en que se adiciona una variable funcional correspondiente a la derivada de las funciones iniciales.")
 
 fig_6_cap <- fig_nums(name = "fig_6", 
                         caption = "Valores observados de la variable respuesta junto con sus respectivas estimaciones de acuerdo a las diferentes metodologías de estimación en el caso en que se adiciona una variable funcional correspondiente a la derivada de las funciones iniciales.")
@@ -84,7 +74,7 @@ fig_6_cap <- fig_nums(name = "fig_6",
 Con el objetivo de complementar los resultados, se describen de manera breve las tres metodologías propuestas en \citet{kokoszka2017introduction} para el caso donde se tienen variables funcionales como regresoras y escalares en la respuesta. Estas se presentan a continuación. De esta manera, la ecuación de regresión que relaciona una variable funcional y una variable de tipo escalar se muestra en la ecuación \eqref{eq_reg}. 
 
 \begin{equation}\label{eq_reg}
-Y_i = \alpha + \int \beta(t)X(t)dt + \epsilon_i
+Y_i = \alpha + \int \beta(t)X_i(t)dt + \epsilon_i
 \end{equation}
 
    + Estimación a partir de funciones base
@@ -105,7 +95,7 @@ De esta forma, reemplazando la ecuación \eqref{eq_reg_basis_1} en la ecuación 
    
    + **Estimación a partir de penalizaciones por rugosidad:**
    
-   La idea principal de esta propuesta es considerar un parámetro de penalización por curvaturas. La función a optimizar en este planteamiento se muestra en la ecuación \eqref{eq_penalty_1}. La estimación de $\int \beta(t)X(t)dt$ se realiza de manera análoga a la metodología presentada en la metodología de estimación sin penalización, mientras que la estimación  de $\lambda$ se realiza mediante validación cruzada generalizada. 
+   La idea principal de esta propuesta es considerar un parámetro de penalización por curvaturas. La función a optimizar en este planteamiento se muestra en la ecuación \eqref{eq_penalty_1}. La estimación de $\int \beta(t)X_i(t)dt$ se realiza de manera análoga a la metodología presentada en la metodología de estimación sin penalización, mientras que la estimación  de $\lambda$ se realiza mediante validación cruzada generalizada. 
    
    \begin{equation}\label{eq_penalty_1}
 P_\lambda (\alpha, \beta) = \sum_{i=1}^N \left[ Y_i - \alpha - \int \beta (t)X_i (t)df \right]^2 + \lambda \int [(L\beta)(t)]^2dt
@@ -115,7 +105,7 @@ P_\lambda (\alpha, \beta) = \sum_{i=1}^N \left[ Y_i - \alpha - \int \beta (t)X_i
    
    + **Regresión a partir de los componentes principales funcionales:** 
 
-donde $\hat{\xi}_{ij} = \int \left[ X_i(t)-\hat{\mu}(t) \right]\hat{v}_j (t)$
+Lo que se realiza en esta sección es reexpresar $X(t)$ en términos de la descomposición de Karhunen–Loève, es decir, como se muestra en la ecuación \eqref{eq_fpca1}, donde $\hat{\xi}_{ij} = \int \left[ X_i(t)-\hat{\mu}(t) \right]\hat{v}_j (t)$. Al reemplazar la ecuación \eqref{eq_fpca1} en la ecuación \eqref{eq_reg} se obtiene lo que se muestra en la ecuación \eqref{eq_fpca2}.
 
 \begin{equation}\label{eq_fpca1}
 X(t) \approx \mu(t)+\sum_{j=1}^p \hat{\xi}_{ij} \hat{v}_j (t)
@@ -268,7 +258,25 @@ Table_R_squared_2 <- df_to_plot %>%
   mutate(SST = sum((Y-mean(Y))^2)) %>% mutate(R2 = 1-SSE/SST)
 ```
 
-Para resumir el comportamiento de las estimaciones de $\beta(t)$, el `r f.ref2("fig_1")` muestra a $\hat{\beta}(t)$, de acuerdo a los diferentes métodos de estimación descritos. Por otro lado, `r f.ref2("fig_2")` muestra lo mismo en un rango más reducido de valores en el eje de las abcisas, ya que en la primer figura se observa como uno de los casos toma valores elevados, lo cual hace parecer que la regresión por componentes principales arroja una función casi constante como resultado, mientras que en la segunda figura se observa cómo la función oscila, solo que menos que los otros métodos de estimación, tanto el que penaliza como el que no lo hace. Una manera de realizar la interpretación de la estimación de los $\beta(t)$ es similar a diferentes ponderaciones asignadas a cada $X(t)$. Por ende, como la estimación realizada sin penalización obtiene valores mayores en valores absoluto en los extremos del intervalo, esto quiere decir que en ese caso se asigna una mayor importancia a los valores de $X(t)$  con $t$ cercanos a 0 o a 100. Como en el caso de FPCA se observa una función que no oscila en la misma proporción que las otras, se podría pensar en que las ponderaciones son más homogéneas. 
+
+```{r echo=FALSE}
+tab_1_cap <- table_nums(name = "tab_1", 
+                        caption = "Cuadrados medio del error de acuerdo a la metodología de estimación de la función de regresión.")
+
+tab_2_cap <- table_nums(name = "tab_2", 
+                        caption = "Sumas de cuadrado y coeficientes de determinación de acuerdo a la metodología de estimación de la función de regresión.")
+
+tab_3_cap <- table_nums(name = "tab_3", 
+                        caption = "Cuadrados medio del error de acuerdo a la metodología de estimación de la función de regresión en el caso en que se adiciona una variable funcional correspondiente a la derivada de las funciones iniciales.")
+
+tab_4_cap <- table_nums(name = "tab_4", 
+                        caption = "Sumas de cuadrado y coeficientes de determinación de acuerdo a la metodología de estimación de la función de regresión en el caso en que se adiciona una variable funcional correspondiente a la derivada de las funciones iniciales.")
+```
+
+
+
+
+Para resumir el comportamiento de las estimaciones de $\beta(t)$, el `r f.ref2("fig_1")` muestra a $\hat{\beta}(t)$, de acuerdo a los diferentes métodos de estimación descritos. Por otro lado, el `r f.ref2("fig_2")` muestra lo mismo en un rango más reducido de valores en el eje de las ordenadas, ya que en la primer figura se observa como uno de los casos toma valores elevados en valor absoluto, lo cual hace parecer que la regresión por componentes principales arroja una función casi constante como resultado, mientras que en la segunda figura se observa cómo la función oscila, solo que menos, en comparación con los otros métodos de estimación, tanto el que penaliza como el que no lo hace. Una manera de realizar la interpretación de la estimación de los $\beta(t)$ es similar a diferentes ponderaciones asignadas a cada $t$. Por ende, como la estimación realizada sin penalización obtiene valores mayores en valores absoluto en los extremos del intervalo, esto quiere decir que en ese caso se asigna una mayor importancia a los valores de $X(t)$  con $t$ cercanos a 0 o a 100. Como en el caso de FPCA se observa una función que no oscila en la misma proporción que las otras, se podría pensar en que las ponderaciones son más homogéneas. 
 
 ```{r echo=FALSE,warning=FALSE, message=FALSE}
 plot_1
@@ -284,7 +292,7 @@ plot_2
 `r fig_2_cap`
 \end{center}
 
-El `r f.ref2("fig_3")` muestra las estimaciones y los valores observados de $Y_i$ de acuerdo a los diferentes métodos. Allí se observa que el caso que utiliza los FPCA arroja residuales mayores que los otros. Para corroborar lo que se establece anteriormente, se calculan los cuadrados medios del error ($CME$) para cada caso. La `r f.ref("tab_1")` muestra los CME, en donde se observa que cuando se utiliza los FPCA es el de peor rendimiento, mientras que el que menor $CME$ tiene es el método que no penaliza por rugosidad. 
+El `r f.ref2("fig_3")` muestra las estimaciones y los valores observados de $Y_i$ de acuerdo a los diferentes métodos. Allí se observa que el caso que utiliza los FPCA arroja residuales mayores que los otros. Para corroborar lo que se establece anteriormente, se calculan los cuadrados medios del error ($CME$) para cada caso. La `r f.ref("tab_1")`  muestra los CME, en donde se observa que cuando se utiliza los FPCA es el de peor rendimiento, mientras que el que menor $CME$ tiene es el método que no penaliza por rugosidad. 
 
 ```{r echo=FALSE,warning=FALSE, message=FALSE}
 plot_3
@@ -294,11 +302,13 @@ plot_3
 \end{center}
 
 
-\vspace{12pt}
-`r tab_1_cap`
+
+
 ```{r echo=FALSE,warning=FALSE, message=FALSE}
-kable(Table_MSE) %>% kable_styling(position = "center")
+knitr::kable(Table_MSE,caption=str_replace(tab_1_cap,"Tabla  [\\d+]: ","")) %>%
+  kable_styling(position = "center")
 ```
+
 
 
 
@@ -320,12 +330,11 @@ R^2 = 1 - \frac{SSE}{SST}
 
 * Formule un modelo de regresión adicionando la información suministrada por la primera derivada de las curvas espectrométricas. Encuentre las estimaciones de los parámetros y el coeciente de determinación. Compare estos resultados con los resutlados anteriores.
 
-\vspace{12pt}
-`r tab_2_cap`
 ```{r echo=FALSE,warning=FALSE, message=FALSE}
-kable(Table_R_squared) %>% kable_styling(position = "center")
+kable(Table_R_squared,caption=str_replace(tab_2_cap,"Tabla  [\\d+]: ","")) %>% 
+  kable_styling(position = "center")
 ```
-\vspace{12pt}
+
 
 
 
@@ -340,11 +349,9 @@ Se repitió el mismo procedimiento, de manera análoga al caso que se describió
 <!-- `r fig_4_cap` -->
 <!-- \end{center} -->
 
-\begin{center}
-`r tab_3_cap`
-\end{center}
+
 ```{r echo=FALSE,warning=FALSE, message=FALSE}
-kable(Table_MSE_2) %>% kable_styling(position = "center")
+kable(Table_MSE_2,caption=str_replace(tab_3_cap,"Tabla  [\\d+]: ","")) %>% kable_styling(position = "center")
 ```
 
 
@@ -360,11 +367,9 @@ plot_6
 
 
 
-\begin{center}
-`r tab_4_cap`
-\end{center}
+
 ```{r echo=FALSE,warning=FALSE, message=FALSE}
-kable(Table_R_squared_2) %>% kable_styling(position = "center")
+kable(Table_R_squared_2,caption=str_replace(tab_4_cap,"Tabla  [\\d+]: ","")) %>% kable_styling(position = "center")
 ```
 
 
