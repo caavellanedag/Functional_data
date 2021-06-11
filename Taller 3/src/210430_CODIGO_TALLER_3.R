@@ -4,10 +4,6 @@
 # Fecha creación: 22/04/2021
 #==============================================
 
-if(!("input" %in% list.files())){dir.create("input")}
-if(!("output" %in% list.files())){dir.create("output")}
-if(!("src" %in% list.files())){dir.create("src")}
-if(!("docs" %in% list.files())){dir.create("docs")}
 
 require(pacman)
 p_load(tidyverse,openxlsx,here,haven,data.table,fda,fda.usc,roahd,fdaoutlier,caret)

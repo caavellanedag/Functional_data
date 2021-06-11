@@ -1,0 +1,7 @@
+\babel@toc {spanish}{}
+\beamer@sectionintoc {1}{Resumen}{3}{0}{1}
+\beamer@sectionintoc {2}{Introducción}{4}{0}{2}
+\beamer@sectionintoc {3}{Análisis espectral de campos aleatorios funcionales}{6}{0}{3}
+\beamer@sectionintoc {4}{Componentes principales funcionales espaciales}{20}{0}{4}
+\beamer@sectionintoc {5}{Estimación}{25}{0}{5}
+\beamer@sectionintoc {6}{Filtros lineales y proceso ARMA espacial funcional}{27}{0}{6}

@@ -1,0 +1,437 @@
+---
+title: "Análisis de componentes principales de funciones indexadas espacialmente"
+subtitle: Universidad Nacional de Colombia
+author: Camilo Avellaneda
+date: 10 de junio de 2021
+lang: es-CO
+toc: true
+fig_width: 4
+fig_height: 2.5
+fontsize: 12pt
+header-includes: 
+- \AtBeginSubsection{}
+- \AtBeginSection{}
+#- \fontsize{8pt}{10}\selectfont
+- \newtheorem{definicion}{Definición}[section]
+- \newtheorem{proposicion}{Proposición}[section]
+- \newtheorem{supuesto}{Supuesto}[section]
+output: 
+  beamer_presentation:
+    citation_package: natbib
+    theme: "Boadilla"
+    colortheme: "default"
+    fonttheme: "structurebold"
+    slide_level: 2
+bibliography: references.bib
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+
+
+# Resumen
+## Resumen
+
+En el articulo se desarrolla una expansión, similar a la expansión de Karhunen-Loève, pero más adecuada para datos funcionales indexados en locaciones espaciales. Esta propuesta tiene en cuenta la dependencia espacial entre funciones, mediante lo cual se tiene una herramienta de reducción de dimensionalidad más eficiente. El articulo presenta la teoría asintótica y métodos de estimación correspondientes.
+
+
+# Introducción
+## Introducción
+
+El análisis de componentes principales funcionales juega un papel relevante en el análisis de datos funcionales. Diferentes análisis en esta área trabajan con data sets de la forma $X_{\textbf{s}}(u)$, $\textbf{s} \in \mathcal{S}$, $u \in \mathcal{U}$, donde $\textbf{s}$ es una ubicación espacial y $\mathcal{U}$ denota un intervalo de tiempo. En adelante, este conjunto de datos se representará de la forma $\{X_{\textbf{s}}, \textbf{s} \in \mathbb{Z}^r \}$ y se denomina un campo aleatorio funcional. 
+
+## Introducción
+
+Para definir los componentes principales funcionales, basta asumir que la distribución de $X_{\textbf{s}}$ no depende de $\textbf{s}$, en cuyo caso los componentes principales funcionales (FPC) $v_m,\enspace m \geq 1$, quedan determinadas por las funciones propias del operador de covarianza de las funciones $X_{\textbf{s}}$. La expresión de Karhunen-Loève se muestra en la ecuación \eqref{eq1}
+
+\begin{equation}\label{eq1}
+X_\mathbf{s}(t) =  \sum_{m=1}^\infty \xi_{m,\mathbf{s}} v_m (u),\enspace u \in \mathcal{U}.
+\end{equation}
+
+Por otro lado, el objetivo de este articulo es desarrollar una representación para datos funcionales sobre un dominio espacial que refleje la dependencia espacial.
+
+
+
+# Análisis espectral de campos aleatorios funcionales
+
+En esta sección se presentan resultados fundamentales para el desarrollo de una metodología del dominio de la frecuencia en el contexto de campos aleatorios funcionales definido sobre una grilla en $\mathbb{Z}^r$. Mientras se tienen diferentes resultados en el análisis de frecuencias en series de tiempo o en estadística espacial, no se tienen resultados correspondientes al dominio espectral para espacios de Hilbert en campos aleatorios.
+
+## Notación y supuestos
+
+Sea $\{X_{\textbf{s}}, \enspace \textbf{s} \in \mathbb{Z}^r\}$ un campo aleatorio con una dimensión fija $r \in \mathbb{N}$. Cada $X_\mathbf{s}$ es una función aleatoria en un espacio separable de Hilbert $H = \mathcal{L} ([0,1])$ de funciones complejas cuadrado integrables en el intervalo $[0, 1]$. El producto interno sobre $H$ es definido, como se muestra en la ecuación \eqref{eq2}. La norma se denota por $|| x || = \sqrt{\langle x,x \rangle}$, mientras que el producto tensor se define sobre $H$, como se muestra en la ecuación \eqref{eq3}.
+
+\begin{align}
+\langle x, y \rangle &= \int_0^1 x(u) \bar{y}(u) du \label{eq2}\\
+x \otimes y(\cdot) &:= \langle \cdot, y \rangle x. \label{eq3}
+\end{align}
+
+## Notación y supuestos
+
+Se trabaja con tres clases de operadores lineales $A: H \rightarrow H'$, donde $H'$ es otro espacio separable de Hilbert.
+
+\begin{itemize}
+\item Clase de traza $= S_1$,
+\item Hilbert Schmidt $= S_2$ y
+\item Acotados $= S_\infty$.
+\end{itemize}
+
+Las correspondientes normas se definen como 
+
+\begin{itemize}
+\item $||A||_{S_1} = \sum_{I \in \mathbb{N}} \langle (A* A)^{1/2} \varphi_l, \varphi_l \rangle$, 
+
+\item $||A||_{S_2}= \sum_{I \in \mathbb{N}}||A \varphi||^2$ y 
+
+\item $||A||_{S_\infty} = \sup_{||x|| \leq 1} ||Ax||,$ 
+\end{itemize}
+
+
+donde $\{\varphi_i, \enspace l \geq 1 \}$ es una base ortonormal.
+
+
+## Notación y supuestos
+
+
+\begin{definicion}
+
+Un campo aleatorio funcional $(X_\mathbf{s})_{\mathbf{s} \in \mathbb{Z}^r}$ se denomina estacionario en el sentido débil, si $\forall \mathbf{s} \in \mathbb{Z}^r$,
+
+\begin{itemize}
+\item $X_\mathbf{s} \in \mathcal{L}^2$
+\item $E[X_\mathbf{s}] = E[X_\mathbf{0}]$
+\item $\forall \mathbf{s}, \mathbf{h} \in \mathbb{Z}^r$ y $u, v \in [0,1]$, se tiene
+
+\begin{equation}\label{eq4}
+c_\mathbf{h}(u,v) := Cov(X_\mathbf{h}(u), X_\mathbf{0}(v)) = Cov(X_{\mathbf{s}+\mathbf{h}}(u), X_\mathbf{s}(v)).
+\end{equation}
+\end{itemize}
+
+El operador integral definido por el kernel dado en la ecuación \eqref{eq4}, se denota por $C_\mathbf{h}$.
+\end{definicion}
+
+## Notación y supuestos
+
+La definición de estacionariedad, considerada anteriormente será utilizada frecuentemente en lo que resta. Al igual, se trabajará con el supuesto de que los operadores de autocovarianza del proceso son absolutamente sumables, i.e.
+
+$$\sum_{h \in \mathbb{Z}^r} ||C_{\mathbf{h}}||_{S_2} < \infty$$.
+
+
+## Notación y supuestos
+
+\begin{itemize}
+\item $\mathcal{L}^2_{\mathcal{S(H,H')}}([-\pi,\pi]^r)$ hace referencia al conjunto de operadores $\mathcal{HS}$ definidos de $\mathcal{H}$ a $\mathcal{H'}$.
+\item $\mathcal{L}^2_{\mathcal{H}}([-\pi,\pi]^r)$ es el espacio de funciones medibles $x: [-\pi, \pi]^r \rightarrow \mathcal{H}$ cuadrado integrables.
+\item Usando el producto interno $(x,y)_2:= \frac{1}{(2\pi)^r} \int_{[-\pi, \pi]^r} \langle x(\boldsymbol{\theta}), y(\boldsymbol{\theta}) \rangle d \boldsymbol{\theta}$, con su respectiva norma, $\mathcal{L}^2_{\mathcal{H}}([-\pi,\pi]^r)$ es un espacio de Hilbert.
+\end{itemize}
+
+## Operador de la densidad espectral
+
+\begin{definicion}
+
+
+Sea $(X_\mathbf{s})_{\mathbf{s} \in \mathbb{Z}^r}$ un campo aleatorio funcional estacionario en el sentido débil. Sea
+
+\begin{equation}
+f_{\boldsymbol{\theta}}^X (u, v) := \frac{1}{(2\pi)^r} \sum_{\mathbf{h} \in \mathbb{Z}^r}c_\mathbf{h} (u,v) e^{-i \mathbf{h}^T \boldsymbol{\theta}}, \enspace \boldsymbol{\theta} \in [-\pi, \pi]^r.
+\end{equation}
+
+El operador integral definido a partir del anterior kernel se denomina el operador de densidad espectral de $(X_s)$, $\mathcal{F}_{\boldsymbol{\theta}}^X$, en una frecuencia espacial $\boldsymbol{\theta}$.
+
+\end{definicion}
+
+
+
+## Operador de la densidad espectral
+
+\begin{proposicion}
+
+Sea $(X_\mathbf{s})_{\mathbf{s} \in \mathbb{Z}^r}$ un campo aleatorio que cumple los supuestos de estacionariedad en el sentido débil y cuyos operadores de autocovarianza son absolutamente sumables, entonces $\forall \boldsymbol{\theta}$, el operador $\mathcal{F}_{\boldsymbol{\theta}}^X$ es no negativo, autoadjunto, por lo cual admite la descomposición, que se muestra en la ecuación \eqref{eq5}.
+
+\begin{equation}\label{eq5}
+\mathcal{F}_{\boldsymbol{\theta}}^X = \sum_{m \geq 1} \lambda_m (\boldsymbol{\theta}) \varphi_m (\boldsymbol{\theta}) \otimes \varphi_m (\boldsymbol{\theta}),
+\end{equation}
+
+\noindent donde $\lambda_m (\boldsymbol{\theta})$ representa los valores propios del operador y $\varphi_m (\boldsymbol{\theta}) \in H$ su respectiva función propia.
+\end{proposicion}
+
+## Operador de la densidad espectral
+
+\begin{proposicion}
+Adicionalmente, $\boldsymbol{\theta} \rightarrow \mathcal{F}_{\boldsymbol{\theta}}^X$ es una función continua y
+
+a) Los valores propios, $\lambda_m (\boldsymbol{\theta})$ son funciones continuas en términos de $\boldsymbol{\theta}$.
+
+b) Suponiendo $\sum_{\mathbf{h} \in \mathbb{Z}^r} ||h||_{\infty} ||C_{\mathbf{h}}||_{S_2} < \infty$, entonces $\lambda_m (\boldsymbol{\theta})$ son funciones Lipschitz continuas.
+
+c) Si $X_\mathbf{s}$ toma valores en los reales, para cualquier frecuencia espacial $\boldsymbol{\theta}$ y $m \geq 1$, los valores propios $\lambda_m (\boldsymbol{\theta})$ son funciones pares y las funciones propias son Hermitianas en $\boldsymbol{\theta}$, i.e., $\lambda_m (\boldsymbol{\theta}) = \lambda_m (-\boldsymbol{\theta})$ y $\varphi_m (\boldsymbol{\theta}) = \overline{\varphi_m (\boldsymbol{\theta})}.$
+\end{proposicion}
+
+## Formula de inversión
+
+\begin{proposicion}
+
+Suponga que $x \in \mathcal{L}_H^2([-\pi, \pi]^r)$, definiendo el $k$-ésimo coeficiente de Fourier, como se muestra en la ecuación \eqref{eq6}
+
+\begin{equation}\label{eq6}
+f_{\mathbf{k}} := \frac{1}{(2\pi)^r} \int_{[-\pi, \pi]^r} x(\boldsymbol{\theta}) e^{-i \mathbf{k}^T\boldsymbol{\theta}}d\boldsymbol{\theta}
+\end{equation}
+
+Mediante este coeficiente, la secuencia de sumas parciales 
+
+$$S_n(\boldsymbol{\theta}):= \sum_{||\mathbf{k}||_\infty \leq n} f_\mathbf{k}e_\mathbf{k} =\sum_{||\mathbf{k}||_\infty \leq n} f_\mathbf{k}e^{i\mathbf{k}^T \boldsymbol{\theta}}$$
+\noindent tiene a $x(\boldsymbol{\theta})$ como su cuadrado medio en el límite a.e., i.e.
+
+$$\int_{[-\pi, \pi]^r} ||S_n(\boldsymbol{\theta})-x(\boldsymbol{\theta}) ||^2 d \boldsymbol{\theta} \rightarrow 0$$
+
+\end{proposicion}
+
+
+## Dependencia espacial y filtros lineales
+
+\begin{definicion}
+\begin{itemize}
+\item  Sea $\{\epsilon_{\mathbf{s}}, \mathbf{s}\in \mathbb{Z}^r \}   \subset S$ un campo aleatorio i.i.d, que toma valores en un espacio medible $S$ y sea $f: S^{\mathbb{Z}^r} \rightarrow H$ una función medible. 
+
+\item Suponga que $\{ X_\mathbf{s}, \mathbf{s}\in \mathbb{Z}^r \subset H\}$, se puede reescribir como $X_s = f(\{\epsilon_{\mathbf{s}-\mathbf{k}}, \mathbf{k} \in \mathbb{Z}^r\}).$
+
+\end{itemize}
+\end{definicion}
+
+## Dependencia espacial y filtros lineales
+
+\begin{definicion}
+\begin{itemize}
+
+\item Sea $\{\epsilon'_{\mathbf{s}}, \mathbf{s}\in \mathbb{Z}^r \}$ una copia independiente de $\{\epsilon_{\mathbf{s}}, \mathbf{s}\in \mathbb{Z}^r\}$, se define 
+
+$$X_\mathbf{s}^m = f((I_{\{||\mathbf{k}||<m\}} \epsilon_{\mathbf{s}-\mathbf{k}}+I_{\{||\mathbf{k}||\geq m\}} \epsilon'_{\mathbf{s}-\mathbf{k}})_{\mathbf{k}\in \mathbb{Z}^r})  $$
+Para $1 \leq p < \infty$, $(X_\mathbf{s})_{\mathbf{s} \in \mathbb{Z}^r}$ es aproximable en $\mathcal{L}^p_m$ si
+
+\begin{equation}
+\sum_{\mathbf{h}\in \mathbb{Z}^r} \left[E|| X_0 - X_0^{(|| \mathbf{h} ||_\infty) }||^p \right]^{1/p} < \infty
+\end{equation}
+
+Lo que es equivalente a tener 
+
+\begin{equation}
+\sum_{m \in \mathbb{N}} m^{r-1} V_p(X_0 - X_0^{(m)}) < \infty, \enspace \text{con} \enspace V_p(Y):=\left[E[||Y||^p] \right]^{1/p}
+\end{equation}
+\end{itemize}
+\end{definicion}
+
+## Dependencia espacial y filtros lineales
+
+\begin{proposicion}
+Sea $\{X_\mathbf{s}, \mathbf{s} \in \mathbb{Z}^r\}$ aproximable $\mathcal{L}_m^2$, entonces los operadores de autocovarianza son sumables y los operadores $\mathcal{F}_{\boldsymbol{\theta}}^X$, $\boldsymbol{\theta} \in [-\pi, \pi]^r$ son de clase de traza. 
+\end{proposicion}
+
+
+## Dependencia espacial y filtros lineales
+
+\begin{proposicion}
+Sea $\{X_\mathbf{s}, \mathbf{s} \in \mathbb{Z}^r\}$ un proceso lineal, i.e.
+
+\begin{equation}
+X_{\mathbf{s}} = \sum_{\mathbf{k} \in \mathbb{Z}^r} \Psi_{\mathbf{k}} \epsilon_{\mathbf{s}-\mathbf{k}},
+\end{equation}
+
+\noindent donde $\{\epsilon_{\mathbf{s}} , \mathbf{s}\in \mathbb{Z}^r\}$ es un campo aleatorio i.i.d. con $V_p (\epsilon_0) < \infty$ con $p \geq 1$ y $\Psi_\mathbf{k}$ son operadores en $H$. Si se cumple
+
+\begin{equation}
+\sum_{\mathbf{k} \in \mathbb{N}} m^{r-1} \sum_{||\mathbf{k}||_\infty \geq m} || \Psi_{\mathbf{k}}   ||<\infty
+\end{equation}
+
+entonces $(X_\mathbf{s})_{\mathbf{s} \in \mathbb{Z}^r}$ es aproximable en $\mathcal{L}_m^p$.´
+\end{proposicion}
+
+
+# Componentes principales funcionales espaciales
+## Existencia y propiedades fundamentales
+
+\begin{itemize}
+\item Retomando de la ecuación \eqref{eq5}, denotando $\varphi_m(u|\boldsymbol{\theta})$ al valor de la función propia $\varphi_m(\boldsymbol{\theta})$ evaluada en $u \in [0,1]$. 
+\item Como $\varphi_m(\boldsymbol{\theta})$ es una función ortonormal, entonces $\varphi_m(\boldsymbol{\theta}) \in \mathcal{L}^2([-\pi, \pi]^r)$.
+\item Su respectivo coeficiente de Fourier, junto con su respectiva expansión se calculan como sigue
+
+\begin{align}\label{eq9}
+\phi_{m,\mathbf{l}} &:= \frac{1}{(2\pi)^r} \int_{[-\pi, \pi]^r} \varphi_m (u| \boldsymbol{\theta}) e^{-i \mathbf{l}^T \boldsymbol{\theta}} d\boldsymbol{\theta} \\
+\label{eq10}
+\varphi_m (u|\boldsymbol{\theta}) &= \sum_{\mathbf{l} \in \mathbb{Z}^r}  \phi_{m,\mathbf{l}} (u) e^{i\mathbf{l}^T\boldsymbol{\theta}}
+\end{align}
+\end{itemize}
+
+
+## Existencia y propiedades fundamentales
+
+\begin{definicion}
+Sea $(X_{\mathbf{s}})_{\mathbf{s} \in \mathbb{Z}^r}$ un campo aleatorio estacionario, con operadores de covarianza absolutamente sumables. El score asociado al $m$-ésimo componente principal funcional espacial ($SFPC$) se define como se muestra en la ecuación \eqref{eq11}.
+
+\begin{equation}\label{eq11}
+Y_{m,s} := \sum_{\textbf{l} \in \mathbb{Z}^r} \langle X_{\textbf{s}-\textbf{l}}, \phi_{m, \textbf{l}} \rangle
+\end{equation}
+\end{definicion}
+
+## Existencia y propiedades fundamentales
+
+\begin{proposicion}
+Sea $(X_{\mathbf{s}})_{\mathbf{s} \in \mathbb{Z}^r}$ un campo aleatorio estacionario, con operadores de covarianza absolutamente sumables. Utilizando la definición dada en el anterior slide, entonces
+
+\begin{itemize}
+\item $E[Y_{m, \textbf{s}}] = 0$ y $E[Y_{m, \textbf{s}}^2]=\sum_{\textbf{k} \in \mathbb{Z}^r}\sum_{\textbf{l} \in \mathbb{Z}^r} \langle C_{\mathbf{l}-\mathbf{k}}^X(\phi_{m, \mathbf{l}}), \phi_{m,\mathbf{k}} \rangle$
+
+\item Si $X_s$ toma valores en los $\mathbb{R}$ entonces los coeficientes $\phi_{m, \textbf{l}}(u)$ y $Y_{m,\textbf{s}}$ son reales.
+
+\item Si $C_{\textbf{h}}^X=0$ $\forall \textbf{h} \neq 0$ entonces $Y_{m, \textbf{s}}$ coincide con los scores del FPC ordinario.
+
+\item Para $m \neq m'$ y $s, s' \in \mathbb{Z}^r$ los scores $Y_{m, \textbf{s}}$ y $Y_{m, \textbf{s}'}$ son no correlacionados.
+\end{itemize}
+\end{proposicion}
+
+## Expansión de Karhunen Loève  espacial
+
+Sea $(X_{\textbf{s}})_{\textbf{s} \in \mathbb{Z}^r}$ es un campo aleatorio funcional estacionario y con operadores de autocovarianza son absolutamente sumables. Sean $\phi_{m, \textbf{s}}$ y $Y_{m, \textbf{s}}$  como en las ecuaciones \eqref{eq10} y \eqref{eq11}, entonces
+
+\begin{align} \label{eq12} 
+ X_{\textbf{s}}(u)&=\sum_{m \geq 1}X_{m, \textbf{s}}(u) \text{ con } X_{m, \textbf{s}}(u):= \sum_{\textbf{l}\in \mathbb{Z}^r} Y_{m,\textbf{s}+\textbf{l}} \phi_{m,\textbf{l}}(u)\\
+\end{align}
+
+convergen en cuadrado medio. Las curvas $X_{m, \textbf{s}}$ no están correlacionadas $m \neq m'$
+
+## Optimabilidad de los SPFC
+
+Para un filtro funcional espacial $\{\psi_{m, \textbf{k}}, \textbf{k}\in \mathbb{Z}^r \}$ y $\{v_{m, \textbf{k}}, \textbf{k}\in \mathbb{Z}^r \}$ en $\mathcal{H}$. Tomando 
+
+\begin{equation} \label{eq13} 
+\tilde{X}_{m, \textbf{s}}(u)=\sum_{\textbf{l}\in \mathbb{Z}^r} \tilde{Y}_{m, \textbf{s}+\textbf{l}} v_{m,\textbf{l}}(u), \enspace \tilde{Y}_{m, \textbf{s}} = \sum_{\textbf{l}\in \mathbb{Z}^r} \langle X_{\textbf{s}-\textbf{l}}, \psi_{m, \textbf{l}} \rangle,
+\end{equation}
+
+entonces, $\forall p \geq 1$,
+
+\begin{equation}
+E\left[\left | \left |  X_{\textbf{s}}-\sum_{m=1}^p X_{m, \textbf{s}} \right | \right |^2 \right] = \sum_{m > p} \int_{[-\pi, \pi]^r}\lambda_m(\boldsymbol{\theta}) d \boldsymbol{\theta} \leq E\left[\left| \left| X_s-\sum_{m=1}^p \tilde{X}_{m, \textbf{s}} \right| \right|\right].
+\end{equation}
+
+# Estimación
+
+## Estimación del operador de densidad espectral
+
+\begin{itemize}
+\item La estimación del operador $\mathcal{F}_\theta^X$ se realiza como sigue
+
+\begin{equation}
+\hat{F}_\theta^X := \frac{1}{(2\pi)^r} \sum_{||\textbf{h}|| \leq \textbf{q}} w(\textbf{h}/\textbf{q})\hat{C}_{\textbf{h}} e^{-i \textbf{h}^T \boldsymbol{\theta}},
+\end{equation}
+
+donde $w$ es una función de ponderaciones y el vector $\textbf{q}$ es un vector de parámetros a optimizar.
+
+\item El operador muestral de autocovarianzas se calcula como sigue
+\begin{equation}
+\hat{C}_{\textbf{h}}:= \frac{1}{N} \sum_{\textbf{s}\in M_{\textbf{h}, \textbf{n}}}
+\end{equation}
+
+
+donde $M_{\textbf{h}, \textbf{n}} = \{\textbf{s} \in \mathbb{Z}^r : 1 \leq s_i, s_i+h_i \leq n_i\}$. Si $M_{\textbf{h}, \textbf{n}}=\emptyset$ entonces $\hat{C}_{\textbf{h}}=0$.
+
+\item $w(\textbf{z})= (1- ||\textbf{z} ||)_{+}$
+\end{itemize}
+
+## Scores muestrales
+
+\begin{itemize}
+\item $\hat{\phi}_{m, \textbf{l}}(u):= \frac{1}{(2\pi)^r} \int_{[-\pi, \pi]^r} \hat{\varphi}_m(u|\boldsymbol{\theta})e^{-i \textbf{l}^T \boldsymbol{\theta}} d \boldsymbol{\theta}$
+
+\item $\hat{Y}_{m,\textbf{s}}:= \sum_{|| \textbf{l}||_\infty \leq L } \langle X_{\textbf{s}-\textbf{l}}, \hat{\phi}_{m, \textbf{l}} \rangle$
+
+\item $X_s(u) \approx \sum_{m=1}^p \hat{X}_{m, \textbf{s}}(u)$, con $\hat{X}_{m, \textbf{s}}(u):=\sum_{|| \textbf{l}||_\infty \leq L }\hat{Y}_{m,\textbf{s}+\textbf{l}} \hat{\phi}_{m, \textbf{l}}(u)$
+\end{itemize}
+
+# Filtros lineales y proceso ARMA espacial funcional
+
+## Filtros lineales
+
+Los filtros lineales y su respectiva representación del dominio espectral juegan un papel fundamental dentro de la propuesta realizada. Para ello, se define el operador rezago $B^k X_{\mathbf{s}}:= X_{\mathbf{s}-\mathbf{k}}$ con $\mathbf{k} \in \mathbb{Z}^r$. El filtro funcional espacial $SFF$, representado por $\boldsymbol{\Psi} = \{\Psi_\mathbf{l} , \mathbf{l} \in \mathbb{Z}^r \}$, es unas secuencia  de operadores lineales. 
+
+## Filtros lineales 
+
+El campo aleatorio funcional filtrado se define a continuación 
+
+\begin{equation}\label{eq7}
+Y_\mathbf{s} = \Psi (B) X_\mathbf{s} = \lim_{n \rightarrow \infty} \sum_{||\mathbf{k} ||_\infty \leq n} \Psi_\mathbf{k} (X_{\mathbf{s}-\mathbf{k}}).
+\end{equation}
+
+La función de la frecuencia de la respuesta del $SFF$ se define como
+
+\begin{equation}\label{eq8}
+\Psi_{\boldsymbol{\theta}} =\sum_{\mathbf{k}\in \mathbb{Z}^r} \Psi(e^{-i \mathbf{k}^T\theta})
+\end{equation}
+
+
+
+## Filtros lineales 
+
+De aquí en adelante $\mathcal{S}(\mathcal{H}, \mathcal{H'})$ representa el espacio de operadores $\mathcal{HS}$ definidos de $\mathcal{H}$ a $\mathcal{H'}$.
+
+\begin{proposicion}
+Sea $\boldsymbol{\Psi} = \{\Psi_\mathbf{k} , \mathbf{k} \in \mathbb{Z}^r\}$ un $SFF$, con $\Psi_\mathbf{k}$ operadores $\mathcal{HS}$ y 
+
+\begin{itemize}
+\item \begin{equation}
+\int_{[-\pi, \pi]^r} \left|\left|  \sum_{||\mathbf{k} ||\leq n} \Psi_\mathbf{k} e^{-i \mathbf{k}^T \boldsymbol{\theta}} - \Psi_{\boldsymbol{\theta}} \right| \right|^2_{\mathcal{S}(\mathcal{H}, \mathcal{H'}) } d\boldsymbol{\theta} \rightarrow 0
+\end{equation}
+
+\item \begin{equation}
+esssup_{\boldsymbol{\theta} \in [-\pi, \pi]^r} ||\Psi_{\boldsymbol{\theta}} ||_{\mathcal{S}_2} < \infty
+\end{equation}
+
+\item Sea $Y_\mathbf{s}$ calculado como en la ecuación \eqref{eq7}, a partir de $X_\mathbf{s}$ un campo aleatorio estacionario, con 
+
+\begin{equation}
+esssup_{\boldsymbol{\theta} \in [-\pi, \pi]^r} ||\mathcal{F}_\theta^X || < \infty
+\end{equation}
+\end{itemize}
+\end{proposicion}
+
+## Filtros lineales
+\begin{proposicion}
+Luego, se tiene
+
+a) $Y_{\mathbf{s}}$  converge en $\mathcal{L}_{\mathcal{H}}^2$
+
+b) $Y_{\mathbf{s}}$ es estacionario en el sentido débil con operador de autocovarianza 
+
+\begin{equation}
+C_{\mathbf{h}}^Y =  \sum_{\mathbf{k} \in \mathbb{Z}^r} \sum_{\mathbf{l} \in \mathbb{Z}^r} \Psi_{\mathbf{k}} C_{\mathbf{h}-\mathbf{k}+\mathbf{l}} \Psi_{\mathbf{l}} 
+\end{equation}
+
+y operador de densidad espectral 
+
+\begin{equation}
+\mathcal{F}_{\theta}^Y = \Psi_{\mathbf{k}} \mathcal{F}_{\theta}^X \Psi_{\mathbf{k}}
+\end{equation}
+
+c)
+
+\begin{equation}
+esssup_{\boldsymbol{\theta} \in [-\pi, \pi]^r} ||\mathcal{F}_\theta^Y || < \infty
+\end{equation}
+\end{proposicion}
+
+## Proceso ARMA funcional espacial
+
+\begin{definicion}
+(SFARMA(P,Q)) Sean $P,Q \subset \mathbb{Z}^r$ dos indices finitos con $(A_k)_{k \in P}$ y $(B_k)_{k \in Q}$ operadores lineales acotados. Sea $(\epsilon_s)_{s\in \mathbb{Z}^r}$ un campo aleatorio funcional de ruido blanco con media igual a 0. Sea $(X_s)_{s\in \mathbb{Z}^r}$ un campo aleatorio funcional que satisface 
+
+\begin{equation}
+X_s := \sum_{k \in P} A_k X_{s-k}+ \sum_{k \in Q} B_k \epsilon_{s-k}.
+\end{equation}
+
+Si $X_s$ es estacionario en el sentido débil, este se denomina un proceso $ARMA(P,Q)$ funcional espacial.
+\end{definicion}
+
+\nocite{panaretos2013fourier}
+\nocite{kuenzer2020principal}
+
+
+# Referencias 

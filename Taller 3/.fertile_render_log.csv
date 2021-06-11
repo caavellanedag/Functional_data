@@ -1,0 +1,8 @@
+path,path_abs,func,timestamp
+package:pacman,NA,base::require,2021-05-18T16:42:34Z
+/media/avellaneda/AVELLANEDA/Universidad Nacional/PhD/Functional_data/Taller 2/src/revisa.csv,NA,utils::write.csv,2021-05-18T16:45:04Z
+package:pacman,NA,base::require,2021-05-18T16:45:04Z
+/media/avellaneda/AVELLANEDA/Universidad Nacional/PhD/Functional_data/revisa.csv,NA,utils::write.csv,2021-05-18T16:45:45Z
+package:pacman,NA,base::require,2021-05-18T16:45:45Z
+package:pacman,NA,base::require,2021-05-18T20:22:17Z
+Z:/Universidad Nacional/PhD/Functional_data/Taller 3/src/Funciones.R,NA,base::source,2021-05-18T20:22:21Z

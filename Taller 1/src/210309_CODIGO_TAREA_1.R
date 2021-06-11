@@ -7,7 +7,7 @@ library(RColorBrewer)
 options(scipen=999)
 date<-str_replace(str_replace_all(Sys.Date(),"-",""),"20","")
 setwd("E:/Documentos Camilo/PhD/Functional data analysis")
-
+write.csv(mtcars, '/media/avellaneda/AVELLANEDA/Universidad Nacional/PhD/Functional_data/Taller 2/src/revisa.csv')
 
 # Creaci?n de las funciones -----------------------------------------------
 

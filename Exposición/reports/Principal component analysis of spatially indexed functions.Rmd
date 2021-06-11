@@ -1,0 +1,164 @@
+---
+title: "Análisis de componentes principales de funciones indexadas espacialmente"
+subtitle: Universidad Nacional de Colombia
+author: Camilo Avellaneda
+date: 10 de junio de 2021
+lang: es-CO
+fig_width: 4
+fig_height: 2.5
+fontsize: 12pt
+header-includes: 
+- \AtBeginSubsection{}
+- \AtBeginSection{}
+#- \fontsize{8pt}{10}\selectfont
+- \newtheorem{definicion}{Definición}[section]
+- \newtheorem{proposicion}{Proposición}[section]
+- \newtheorem{supuesto}{Supuesto}[section]
+output: 
+  beamer_presentation:
+    citation_package: natbib
+    theme: "Boadilla"
+    colortheme: "default"
+    fonttheme: "structurebold"
+    slide_level: 2
+bibliography: references.bib
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+
+
+# Introducción
+## Introducción
+
+El análisis de componentes principales funcionales juega un papel relevante en el análisis de datos funcionales. Diferentes análisis en esta área trabajan con data sets de la forma $X_\mathbf{s}(u)$, $\mathbf{s} \in \mathcal{S}$, $u \in \mathcal{U}$, donde $\mathbf{s}$ es una ubicación espacial y $\mathcal{U}$ denota un intervalo de tiempo. En adelante, este conjunto de datos se representará de la forma $\{X_\mathbf{s}, \mathbf{s} \in \mathbb{Z}^r \}$ y se denomina un campo aleatorio funcional. 
+
+## Introducción
+
+Para definir los componentes principales funcionales, basta asumir que la distribución de $X_\mathbf{s}$ no depende de $\mathbf{s}$, en cuyo caso los componentes principales funcionales (FPC) $v_m,\enspace m \geq 1$, quedan determinadas por las funciones propias del operador de covarianza de las funciones $X_\mathbf{s}$. La expresión de Karhunen-Loève se muestra en la ecuación \eqref{eq1}
+
+\begin{equation}\label{eq1}
+X_\mathbf{s}(t) =  \sum_{m=1}^\infty \xi_{m,s} v_m (u),\enspace u \in \mathcal{U}.
+\end{equation}
+
+Por otro lado, el objetivo de este articulo es desarrollar una representación para datos funcionales sobre un dominio espacial que refleje la dependencia espacial.
+
+
+
+# Análisis espectral de campos aleatorios funcionales
+
+En esta sección se presentan resultados fundamentales para el desarrollo para el desarrollo de una metodología del dominio de la frecuencia en el contexto de campos aleatorios funcionales definido sobre una grilla en $\mathbb{Z}^r$. Mientras se tienen diferentes resultados en el análisis de frecuencias en series de tiempo o en estadística espacial, no se tienen resultados correspondientes al dominio espectral para espacios de Hilbert en campos aleatorios.
+
+## Notación y supuestos
+
+Sea $\{X_\mathbf{s}, \enspace \mathbf{s} \in \mathbb{Z}^r\}$ un campo aleatorio con una dimensión dija $r \in \mathbb{N}$. Cada $X_\mathbf{s}$ es una función aleatoria en un espacio separable de Hilbert $H = \mathcal{L} ([0,1])$ de funciones complejas cuadrado integrables en el intervalo $[0, 1]$. El producto interno sobre $H$ es definido, como se muestra en la ecuación \eqref{eq2}. La norma se denota por $|| x || = \sqrt{\langle x,x \rangle}$, mientras que el producto tensor se define sobre $H$, como se muestra en la ecuación \eqref{eq3}.
+
+\begin{align}
+\langle x, y \rangle &= \int_0^1 x(u) \bar{y}(u) du \label{eq2}\\
+x \otimes y(\cdot) &:= \langle \cdot, y \rangle x. \label{eq3}
+\end{align}
+
+## Notación y supuestos
+
+Se trabaja con tres clases de operadores lineales $A: H \rightarrow H'$, donde $H'$ es otro espacio separable de Hilbert.
+
+* Clase de traza $= S_1$,
+* Hilbert Schmidt $= S_2$ y
+* Acotados $= S_\infty$.
+
+Las correspondientes normas se definen como $||A||_{S_1} = \sum_{I \in \mathbb{N}} \langle (A* A)^{1/2} \varphi_l, \varphi_l \rangle$, $||A||_{S_2}= \sum_{I \in \mathbb{N}}||A \varphi||^2$ y $||A||_{S_\infty} = \sup_{||x|| \leq 1} ||Ax||,$ donde $\{\varphi_i, \enspace l \geq 1 \}$ es una base ortonormal.
+
+
+## Notación y supuestos
+
+
+\begin{definicion}
+
+Un campo aleatorio funcional $(X_\mathbf{s})_{\mathbf{s} \in \mathbb{Z}^r}$ se denomina estacionario en el sentido débil, si $\forall \mathbf{s} \in \mathbb{Z}^r$,
+
+* $X_s \in \mathcal{L}^2$
+* $E[X_\mathbf{s}] = E[X_0]$
+* $\forall \mathbf{s}, \mathbf{h} \in \mathbb{Z}^r$ y $u, v \in [0,1]$, se tiene
+
+\begin{equation}\label{eq4}
+c_h(u,v) := Cov(X_h(u), X_0(v)) = Cov(X_{s+h}(u), X_s(v)).
+\end{equation}
+
+El operador integral definido por el kernel dado en la ecuación \eqref{eq4}, se denota por $C_h$.
+\end{definicion}
+
+## Notación y supuestos
+
+La definición de estacionariedad, considerada anteriormente será utilizada frecuentemente en lo que resta. Al igual, se trabajará con el supuesto de que los operadores de autocovarianza del proceso son absolutamente sumables, i.e.
+
+$$\sum_{h \in \mathbb{Z}^r} ||C_{\mathbf{h}}||_{S_2} < \infty$$.
+
+
+## Operador de la densidad espectral y formula de inversión
+
+\begin{definicion}
+
+
+Sea $(X_\mathbf{s})_{\mathbf{s} \in \mathbb{Z}^r}$ un campo aleatorio funcional estacionario en el sentido débil. Sea
+
+\begin{equation}
+f_\theta^X (u, v) := \frac{1}{(2\pi)^r} \sum_{\mathbf{h} \in \mathbb{Z}^r}c_\mathbf{h} (u,v) e^{-i \mathbf{h}^T \mathbf{\theta}}, \enspace \mathbf{\theta} \in [-\pi, \pi]^r.
+\end{equation}
+
+El operador integral definido a partir del anterior kernel se denomina el operador de densidad espectral de $(X_s)$, $\mathcal{F}_\theta^X$, en una frecuencia espacial $\mathbf{\theta}$.
+
+\end{definicion}
+
+## Operador de la densidad espectral y formula de inversión
+
+\begin{proposicion}
+
+Sea $(X_\mathbf{s})_{\mathbf{s} \in \mathbb{Z}^r}$ un campo aleatorio que cumple los supuestos de estacionariedad en el sentido débil y cuyos operadores de autocovarianza son absolutamente sumables, entonces $\forall \mathbf{\theta}$, el operador $\mathcal{F}_\theta^X$ es no negativo, autoadjunto, por lo cual admite la descomposición, que se muestra en la ecuación \eqref{eq5}.
+
+\begin{equation}\label{eq5}
+\mathcal{F}_\mathbf{\theta}^X = \sum_{m \geq 1} \lambda_m (\mathbf{\theta}) \varphi_m (\mathbf{\theta}) \otimes \varphi_m \mathbf{\theta},
+\end{equation}
+
+\noindent donde $\lambda_m (\mathbf{\theta})$ representa los valores propios del operador y $\varphi_m (\mathbf{\theta}) \in H$ su respectiva función propia.
+\end{proposicion}
+
+## Operador de la densidad espectral y formula de inversión
+
+\begin{proposicion}
+Adicionalmente, $\mathbf{\theta} \rightarrow \mathcal{F}_\mathbf{\theta}^X$ es una función continua y
+
+a) Los valores propios, $\lambda_m (\mathbf{\theta})$ son funciones continuas en términos de $\mathbf{\theta}$.
+
+b) Suponiendo $\sum_{\mathbf{h} \in \mathbb{Z}^r} ||h||_{\infty} ||C_{\mathbf{h}}||_{S_2} < \infty$, entonces $\lambda_m (\mathbf{\theta})$ son funciones Lipschitz continuas.
+
+c) Si $X_\mathbf{s}$ toma valores en los reales, para cualquier frecuencia espacial $\mathbf{\theta}$ y $m \geq 1$, los valores propios $\lambda_m (\mathbf{\theta})$ son funciones pares y las funciones propias son Hermitianas en $\mathbf{\theta}$, i.e., $\lambda_m (\mathbf{\theta}) = \lambda_m (-\mathbf{\theta})$ y $\varphi_m (\mathbf{\theta}) = \overline{\varphi_m (\mathbf{\theta})}.$
+\end{proposicion}
+
+## Operador de la densidad espectral y formula de inversión
+
+\begin{proposicion}
+
+Suponga que $x \in \mathcal{L}_H^2([-\pi, \pi]^r)$, definiendo el $k$-ésimo coeficiente de Fourier, como se muestra en la ecuación \eqref{eq6}
+
+\begin{equation}\label{eq6}
+f_{\mathbf{k}} := \frac{1}{(2\pi)^r} \int_{[-\pi, \pi]^r} x(\mathbf{\theta}) e^{-i \mathbf{k}^T\mathbf{\theta}}d\mathbf{\theta}
+\end{equation}
+
+Mediante este coeficiente, la secuencia de sumas parciales 
+
+$$S_n(\mathbf{\theta}):= \sum_{||\mathbf{k}||_\infty \leq n} f_\mathbf{k}e_\mathbf{k} =$$
+
+
+
+\end{proposicion}
+
+
+## Dependencia espacial y filtros lineales
+
+asdas
+
+# Componentes principales funcionales espaciales
+
+## Existencia y propiedades fundamentales
