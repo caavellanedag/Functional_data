@@ -38,7 +38,7 @@ Conjunto de metodología utilizadas para el análisis de datos que corresponden 
 # Campos de la Estadística Espacial
 
 * Geoestadística: El conjunto $D$ es fijo y de tipo continuo. 
-* Datos de área: $D$ es fijo y aleatorio.
+* Datos de área: $D$ es fijo y discreto.
 * Patrones puntuales: $D$ es discreto o continuo, pero es aleatorio (la selección de las locaciones de medición no dependen del investigador).
 
 # Geoestadística
@@ -54,13 +54,22 @@ El objetivo de esta área es realizar predicciones en sitios no muestreados, ten
   
 # Notación y supuestos básicos
 
-* $\mathbf{Z}(\mathbf{s}) = \mu (\mathbf{s}) + e(\mathbf{s})$ con $e(\mathbf{s}) \sim (\mathbf{0}, \boldsymbol{\Sigma})$
-* $E[Z(s_i)] = \mu (s_i)$.
-* $Var(Z(s_i)) = E[(Z(s_i)-\mu(s_i))^2]=\sigma^2_i$.
+_"everything is related to everything else, but near things are more related than distant things"_
+
+
+# Notación y supuestos básicos
+
+* $\mathbf{Z}(\mathbf{s}) =\boldsymbol{\mu} (\mathbf{s}) + \mathbf{e}(\mathbf{s})$ con $e(\mathbf{s}) \sim (\mathbf{0}, \boldsymbol{\Sigma})$
+
+<!-- * $E[Z(s_i)] = \mu (s_i)$. -->
+<!-- * $Var(Z(s_i)) = E[(Z(s_i)-\mu(s_i))^2]=\sigma^2_i$. -->
+
+* $E[\mathbf{Z}(\mathbf{s})] = \boldsymbol{\mu} (\mathbf{s})$ 
+* $Var(\mathbf{Z}(\mathbf{s})) = \boldsymbol{\Sigma}$
 * Función de autocovarianza : 
 
 \begin{align}
-C(Z(s_i), Z(s_j))&= E[(Z(s_i)-\mu(s_i))(Z(s_j)-\mu(s_j))]
+C(Z(s_i), Z(s_j))&= E[(Z(s_i)-\mu(s_i))(Z(s_j)-\mu(s_j))]= C_{ij}
 \end{align}
 
 * Función de semivariograma :
@@ -70,9 +79,6 @@ C(Z(s_i), Z(s_j))&= E[(Z(s_i)-\mu(s_i))(Z(s_j)-\mu(s_j))]
 \end{align}
 
 
-# Notación y supuestos básicos
-
-_"everything is related to everything else, but near things are more related than distant things"_
 
 # Estacionariedad de segundo orden
 
@@ -117,7 +123,7 @@ Q&=E[(\boldsymbol{\lambda}'\mathbf{Z}(\mathbf{s}))^2]-2E[Z(s_0)\boldsymbol{\lamb
 $$ \boldsymbol{\lambda}' = \left( \boldsymbol{\sigma}+ \mathbf{1}\frac{1-\mathbf{1}' \boldsymbol{\Sigma}^{-1}\boldsymbol{\sigma}}{\mathbf{1}' \boldsymbol{\Sigma}^{-1}\mathbf{1}} \right)' \boldsymbol{\Sigma}^{-1}$$
 $$ m = \frac{1-\mathbf{1}' \boldsymbol{\Sigma}^{-1}\boldsymbol{\sigma}}{\mathbf{1}' \boldsymbol{\Sigma}^{-1}\mathbf{1}}$$
 
-$$ Z^*(s_0) = \hat{\mu}+\boldsymbol{\sigma}' \boldsymbol{Z}^{-1}(\mathbf{Z}(\mathbf{s})-\mathbf{1}\hat{\mu})$$
+$$ Z^*(s_0) = \hat{\mu}+\boldsymbol{\sigma}' \boldsymbol{\Sigma}^{-1}(\mathbf{Z}(\mathbf{s})-\mathbf{1}\hat{\mu})$$
 
 $$\sigma^2_{ok}(s_0) = C(\mathbf{0})-\boldsymbol{\lambda}'\boldsymbol{\sigma}+m$$
 
@@ -155,4 +161,20 @@ $$ \bar{\gamma}(\mathbf{h}) = \frac{\sum (Z(s+h)-Z(s))^2}{2n(h)} $$
 
 La primer etapa del proceso, antes de realizar la predicción requiere de lo que se denomina como análisis estructural, donde se describe la dependencia espacial del proceso. La idea en esta etapa es ajustar un modelo teórico a partir del semivariograma empírico. 
 
+Para realizar la estimación de los parámetros del modelo teórico se requieren valores iniciales, para lo cual se utiliza el modelo empírico.
+
 # Métodos kriging - Kriging simple
+
+$$\mathbf{Z}(\mathbf{s}) = \boldsymbol{\mu}(\mathbf{s})+\mathbf{e}(\mathbf{s})$$
+
+$$Z^*_{sk}=\lambda_0 +\boldsymbol{\lambda}'\mathbf{Z}(\mathbf{s})$$
+
+
+$$\lambda_0 = \mu(\mathbf{s}_0)-\boldsymbol{\lambda}' \boldsymbol{\mu}(\mathbf{s}) $$
+
+$$ \boldsymbol{\lambda} = \boldsymbol{\Sigma}^{-1}\boldsymbol{\sigma} $$
+
+\begin{align}
+Z^*_{sk} &= \lambda_0 +\boldsymbol{\lambda}'\mathbf{Z}(\mathbf{s}) \\
+&= \mu (\mathbf{s}_0)+\boldsymbol{\sigma}' \boldsymbol{\Sigma}^{-1} (\mathbf{Z}(\mathbf{s})-\boldsymbol{\mu}(\mathbf{s}))
+\end{align}
